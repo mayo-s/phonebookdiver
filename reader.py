@@ -1,9 +1,10 @@
 import os
-from mongodb import get_database, create_collection, upsert_entry, is_collection_in_db
+import mongodb_helper
+from mongodb_helper import upsert_entry
 
 # Read files
-phonebookDir = 'data/phonebooks/'
-ignore = ['.DS_Store']
+phonebookDir = 'data/'
+ignore = ['.DS_Store', 'archive', 'yellow_2017_Q3']
 enc = ['cp437', 'iso-8859-1']
 fields = {
     '01_Flags': 'flags',
@@ -64,7 +65,6 @@ def get_fieldname(filename):
 
 
 def save_entries_to_db(dirname, filename):
-    db = get_database()
     encoding = ''
     # choose correct encoding
     year = int(dirname[:4])
@@ -74,10 +74,6 @@ def save_entries_to_db(dirname, filename):
         encoding = enc[1]
 
     collection_name = dirname[:7]
-    # if not is_collection_in_db(collection_name):
-    #   print('Adding new collection -', collection_name)
-    #   create_collection(collection_name)
-
     field_name = fields.get(filename, '')
     if field_name is None:
         err = 'ERROR: Filename not found - ' + filename
@@ -85,8 +81,12 @@ def save_entries_to_db(dirname, filename):
         return err
 
     print('Reading file...')
+    entries = []
     with open(phonebookDir + dirname + filename, 'r', encoding=encoding) as data:
         for i, line in enumerate(data):
+            if line.strip() == '':
+                continue
+
             entry = {field_name: line.strip()}
             id = {'_id': i}
             upsert_entry(id, entry, collection_name)
@@ -94,19 +94,13 @@ def save_entries_to_db(dirname, filename):
     return 'SUCCESS - file added to DB'
 
 # WORKFLOW
-def do():
+directories = get_directories()
+print('# Found ', str(len(directories)), ' directories')
 
-    directories = get_directories()
-    msg = '# Found ' + str(len(directories)) + ' directories'
-    print(msg)
-
-    for dir in directories:
-        dir['files'] = get_files_in_dir(dir['name'])
-        print('-->')
-        print(dir['name'])
-        for file in dir['files']:
-            print('# ', file)
-            print('')
-            save_entries_to_db(dir['name'], file)
-
-    return 'SUCCESS - All files written to database'
+for dir in directories:
+  dir['files'] = get_files_in_dir(dir['name'])
+  print('-->')
+  for file in dir['files']:
+    print('# ', dir['name'], file)
+    save_entries_to_db(dir['name'], file)
+print('SUCCESS - All files added to database')

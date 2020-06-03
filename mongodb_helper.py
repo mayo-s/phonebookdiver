@@ -2,13 +2,14 @@ import pymongo
 from pymongo import MongoClient
 
 MONGO_URI = 'mongodb://localhost:27017'
+
 try:
   client = MongoClient(MONGO_URI)
   db = client.phonebookdiver 
 except pymongo.errors as err:
   print(err)
 else:
-  print('CONNECTED to ', db.name)
+  print('CONNECTED to ', MONGO_URI, db.name)
 
 def get_database():
   return db
