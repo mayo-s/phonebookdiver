@@ -64,8 +64,10 @@ def get_fieldname(filename):
     return field_name
 
 
-def save_entries_to_db(dirname, filename):
+def save_entries_to_db(dir):
+
     encoding = ''
+    dirname = dir['name']
     # choose correct encoding
     year = int(dirname[:4])
     if(year < 2004 and dir != '2003_Q3'):
@@ -74,14 +76,34 @@ def save_entries_to_db(dirname, filename):
         encoding = enc[1]
 
     collection_name = dirname[:7]
-    field_name = fields.get(filename, '')
-    if field_name is None:
-        err = 'ERROR: Filename not found - ' + filename
-        print(err)
-        return err
+
+    fields = []
+    file_pathes = []
+    for file in dir['files']:
+        # print('# ', dir['name'], file)
+        path = phonebookDir + dirname + file
+        file_pathes.append(path)
+
+        field_name = fields.get(file, '')
+        if field_name is None:
+            err = 'ERROR: Filename not found - ' + file
+            print(err)
+            continue
+        fields.append(field_name)
 
     print('Reading file...')
     entries = []
+    with ExitStack() as stack:
+        files = [stack.enter_context(
+            open(fname, 'r', encoding=encoding)) for fname in file_pathes]
+        for i, line in enumerate(files):
+            if line.strip() == '':
+                continue
+
+            entry = {field_name: line.strip()}
+            id = {'_id': i}
+            upsert_entry(id, entry, collection_name)
+
     with open(phonebookDir + dirname + filename, 'r', encoding=encoding) as data:
         for i, line in enumerate(data):
             if line.strip() == '':
@@ -93,14 +115,13 @@ def save_entries_to_db(dirname, filename):
 
     return 'SUCCESS - file added to DB'
 
+
 # WORKFLOW
 directories = get_directories()
 print('# Found ', str(len(directories)), ' directories')
 
 for dir in directories:
-  dir['files'] = get_files_in_dir(dir['name'])
-  print('-->')
-  for file in dir['files']:
-    print('# ', dir['name'], file)
-    save_entries_to_db(dir['name'], file)
+    dir['files'] = get_files_in_dir(dir['name'])
+    print('-->')
+    save_entries_to_db(dir)
 print('SUCCESS - All files added to database')
