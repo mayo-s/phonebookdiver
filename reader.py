@@ -71,51 +71,89 @@ def get_files_in_dir(dir):
     return files
 
 
-def save_entries_to_db(dirname, filename):
-
-    info = ' Saving --> ' + dir['name'] + file
-    log('INFO', info)
-    encoding = ''
-    # choose correct encoding
+def get_encoding(dirname):
+# choose correct encoding
     year = int(dirname[:4])
     if(year < 2004 and dir != '2003_Q3'):
-        encoding = enc[0]
+        return enc[0]
     else:
-        encoding = enc[1]
+        return enc[1]
+    
 
-    collection_name = dirname[:7]
-    field_name = fields.get(filename, '')
-    if field_name is None:
-        err = 'ERROR: Filename not found - ' + filename
-        log('WARNING', err)
-        return err
+# def save_entries_to_db(dirname, filename):
 
-    log('INFO', 'Reading file...')
-    entries = []
-    with open(phonebookDir + dirname + filename, 'r', encoding=encoding) as data:
-        for i, line in enumerate(data):
-            if line.strip() == '':
-                continue
+#     info = ' Saving --> ' + dir['name'] + file
+#     log('INFO', info)
+#     encoding = get_encoding(dirname)
+#     collection_name = dirname[:7]
+#     field_name = fields.get(filename, '')
+#     if field_name is None:
+#         err = 'ERROR: Filename not found - ' + filename
+#         log('WARNING', err)
+#         return err
 
-            entry = {field_name: line.strip()}
-            id = {'_id': i}
-            upsert_entry(id, entry, collection_name)
+#     log('INFO', 'Reading file...')
+#     entries = []
+#     with open(phonebookDir + dirname + filename, 'r', encoding=encoding) as data:
+#         for i, line in enumerate(data):
+#             if line.strip() == '':
+#                 continue
 
-    info = ' SUCCESS - file added to DB'
-    log('INFO', info)
-    return info
+#             entry = {field_name: line.strip()}
+#             id = {'_id': i}
+#             upsert_entry(id, entry, collection_name)
+
+#     info = ' SUCCESS - file added to DB'
+#     log('INFO', info)
+#     return info
+
+
+def files_to_array(dir):
+    dirname = dir['name']
+    files = dir['files']
+    encoding = get_encoding(dirname)
+    phonebook = []
+    for file in files:
+        info = 'caching ' + dirname + file
+        log('INFO', info)
+        field_name = fields.get(file, '')
+        with open(phonebookDir + dirname + file, 'r', encoding=encoding) as data:
+            for i, line in enumerate(data):
+                if i >= len(phonebook):
+                    entry = {'_id': i}
+                    phonebook.append(entry)
+                
+                if line.strip() == '':
+                    continue
+
+                phonebook[i]
+                entry[field_name] = line.strip()
+                phonebook[i] = entry
+    
+    for p in phonebook[:100]:
+        print(p)
+
+    return phonebook
+
+def send_to_db(phonebook):
+
+    return 'SUCCESS'
 
 
 # WORKFLOW
+
 
 directories = get_directories()
 log('LB', '')
 info = ' # Found ' + str(len(directories)) + ' directories'
 log('INFO', info)
-
+files = []
 for dir in directories:
     dir['files'] = get_files_in_dir(dir['name'])
     log('INFO', ' -->')
-    for file in dir['files']:
-        save_entries_to_db(dir['name'], file)
+    # for file in dir['files']:
+    #     save_entries_to_db(dir['name'], file)
+    data = files_to_array(dir)
+    send_to_db(dir['name'][:7], data)
+
 log('INFO', ' SUCCESS - All files added to database')
