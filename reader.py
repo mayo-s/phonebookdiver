@@ -1,9 +1,12 @@
 import os
 import mongodb_helper
 from mongodb_helper import upsert_entry
+import logging
+from datetime import datetime
 
 # Read files
 phonebookDir = 'data/'
+logging.basicConfig(filename='_phonebookdiver.log', level=logging.DEBUG)
 ignore = ['.DS_Store', 'archive', 'yellow_2017_Q3']
 enc = ['cp437', 'iso-8859-1']
 fields = {
@@ -36,6 +39,17 @@ fields = {
 }
 
 
+def log(type, msg):
+    date_time = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    msg = ' ' + date_time + ' ' + msg
+    if type is 'WARNING':
+        logging.warning(msg)
+    if type is 'INFO':
+        logging.info(msg)
+    if type is 'LB':
+        logging.info('')
+
+
 def get_directories():
     directories = []
     for dirname in os.listdir(phonebookDir):
@@ -57,17 +71,11 @@ def get_files_in_dir(dir):
     return files
 
 
-def get_fieldname(filename):
-    field_name = ''
-    field_id = filename[:2]
+def save_entries_to_db(dirname, filename):
 
-    return field_name
-
-
-def save_entries_to_db(dir):
-
+    info = ' Saving --> ' + dir['name'] + file
+    log('INFO', info)
     encoding = ''
-    dirname = dir['name']
     # choose correct encoding
     year = int(dirname[:4])
     if(year < 2004 and dir != '2003_Q3'):
@@ -76,34 +84,14 @@ def save_entries_to_db(dir):
         encoding = enc[1]
 
     collection_name = dirname[:7]
+    field_name = fields.get(filename, '')
+    if field_name is None:
+        err = 'ERROR: Filename not found - ' + filename
+        log('WARNING', err)
+        return err
 
-    fields = []
-    file_pathes = []
-    for file in dir['files']:
-        # print('# ', dir['name'], file)
-        path = phonebookDir + dirname + file
-        file_pathes.append(path)
-
-        field_name = fields.get(file, '')
-        if field_name is None:
-            err = 'ERROR: Filename not found - ' + file
-            print(err)
-            continue
-        fields.append(field_name)
-
-    print('Reading file...')
+    log('INFO', 'Reading file...')
     entries = []
-    with ExitStack() as stack:
-        files = [stack.enter_context(
-            open(fname, 'r', encoding=encoding)) for fname in file_pathes]
-        for i, line in enumerate(files):
-            if line.strip() == '':
-                continue
-
-            entry = {field_name: line.strip()}
-            id = {'_id': i}
-            upsert_entry(id, entry, collection_name)
-
     with open(phonebookDir + dirname + filename, 'r', encoding=encoding) as data:
         for i, line in enumerate(data):
             if line.strip() == '':
@@ -113,15 +101,21 @@ def save_entries_to_db(dir):
             id = {'_id': i}
             upsert_entry(id, entry, collection_name)
 
-    return 'SUCCESS - file added to DB'
+    info = ' SUCCESS - file added to DB'
+    log('INFO', info)
+    return info
 
 
 # WORKFLOW
+
 directories = get_directories()
-print('# Found ', str(len(directories)), ' directories')
+log('LB', '')
+info = ' # Found ' + str(len(directories)) + ' directories'
+log('INFO', info)
 
 for dir in directories:
     dir['files'] = get_files_in_dir(dir['name'])
-    print('-->')
-    save_entries_to_db(dir)
-print('SUCCESS - All files added to database')
+    log('INFO', ' -->')
+    for file in dir['files']:
+        save_entries_to_db(dir['name'], file)
+log('INFO', ' SUCCESS - All files added to database')
