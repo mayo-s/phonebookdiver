@@ -1,12 +1,9 @@
 import os
-import mongodb_helper
 from mongodb_helper import upsert_entry
-import logging
-from datetime import datetime
+from log_helper import log
 
 # Read files
 phonebookDir = 'data/'
-logging.basicConfig(filename='_phonebookdiver.log', level=logging.DEBUG)
 ignore = ['.DS_Store', 'archive', 'yellow_2017_Q3']
 enc = ['cp437', 'iso-8859-1']
 fields = {
@@ -23,7 +20,7 @@ fields = {
     '07_08_Strassenindex_Hausnummer': 'street_index',
     '09_Fax_Verweise': 'fax',
     '09_Verweise': 'reference',
-    '10_Postleitzahlen': 'zip',
+    '10_Postleitzahl': 'zip',
     '10_Zustellamt_PLZOst': 'zip_deloffice',  # zip east delivery office
     '11_Ort': 'city',
     '11_Ort_Gemeinde': 'city_county',
@@ -37,18 +34,6 @@ fields = {
     '91_geokoordinaten_str': 'geocoords_str',
     '99_Strassenname': 'street_name'
 }
-
-
-def log(type, msg):
-    date_time = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-    msg = ' ' + date_time + ' ' + msg
-    if type is 'WARNING':
-        logging.warning(msg)
-    if type is 'INFO':
-        logging.info(msg)
-    if type is 'LB':
-        logging.info('')
-
 
 def get_directories():
     directories = []
@@ -117,6 +102,10 @@ def files_to_array(dir):
         info = 'caching ' + dirname + file
         log('INFO', info)
         field_name = fields.get(file, '')
+        if field_name is '':
+            msg = file + ' does not have a field name'
+            log('WARNING', msg)
+            continue
         with open(phonebookDir + dirname + file, 'r', encoding=encoding) as data:
             for i, line in enumerate(data):
                 if i >= len(phonebook):
@@ -126,34 +115,36 @@ def files_to_array(dir):
                 if line.strip() == '':
                     continue
 
-                phonebook[i]
-                entry[field_name] = line.strip()
-                phonebook[i] = entry
-    
+                phonebook[i][field_name] = line.strip()
+    info = str(len(phonebook)) + ' phonebook entries found'
+    log('INFO', info)
     for p in phonebook[:100]:
         print(p)
 
     return phonebook
 
-def send_to_db(phonebook):
+def send_to_db(collection, phonebook):
+    print('Inserting into Database')
+    for entry in enumerate(phonebook):
+        id = entry['_id']
+        upsert_entry(id, entry, collection)
 
     return 'SUCCESS'
 
 
 # WORKFLOW
 
-
 directories = get_directories()
-log('LB', '')
 info = ' # Found ' + str(len(directories)) + ' directories'
 log('INFO', info)
 files = []
 for dir in directories:
-    dir['files'] = get_files_in_dir(dir['name'])
+    dirname = dir['name']
+    dir['files'] = get_files_in_dir(dirname)
     log('INFO', ' -->')
     # for file in dir['files']:
     #     save_entries_to_db(dir['name'], file)
     data = files_to_array(dir)
-    send_to_db(dir['name'][:7], data)
+    send_to_db(dirname[:7], data)
 
 log('INFO', ' SUCCESS - All files added to database')
