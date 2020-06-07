@@ -1,5 +1,5 @@
 import os
-from mongodb_helper import upsert_entry
+from mongodb_helper import upsert_entry, insert_entry
 from log_helper import log
 
 # Read files
@@ -64,35 +64,6 @@ def get_encoding(dirname):
     else:
         return enc[1]
     
-
-# def save_entries_to_db(dirname, filename):
-
-#     info = ' Saving --> ' + dir['name'] + file
-#     log('INFO', info)
-#     encoding = get_encoding(dirname)
-#     collection_name = dirname[:7]
-#     field_name = fields.get(filename, '')
-#     if field_name is None:
-#         err = 'ERROR: Filename not found - ' + filename
-#         log('WARNING', err)
-#         return err
-
-#     log('INFO', 'Reading file...')
-#     entries = []
-#     with open(phonebookDir + dirname + filename, 'r', encoding=encoding) as data:
-#         for i, line in enumerate(data):
-#             if line.strip() == '':
-#                 continue
-
-#             entry = {field_name: line.strip()}
-#             id = {'_id': i}
-#             upsert_entry(id, entry, collection_name)
-
-#     info = ' SUCCESS - file added to DB'
-#     log('INFO', info)
-#     return info
-
-
 def files_to_array(dir):
     dirname = dir['name']
     files = dir['files']
@@ -108,8 +79,9 @@ def files_to_array(dir):
             continue
         with open(phonebookDir + dirname + file, 'r', encoding=encoding) as data:
             for i, line in enumerate(data):
-                if i >= len(phonebook):
-                    entry = {'_id': i}
+                if len(phonebook) >= i:
+                    entry = {}
+                    entry['_id'] = int(i)
                     phonebook.append(entry)
                 
                 if line.strip() == '':
@@ -118,16 +90,13 @@ def files_to_array(dir):
                 phonebook[i][field_name] = line.strip()
     info = str(len(phonebook)) + ' phonebook entries found'
     log('INFO', info)
-    for p in phonebook[:100]:
-        print(p)
 
     return phonebook
 
 def send_to_db(collection, phonebook):
     print('Inserting into Database')
-    for entry in enumerate(phonebook):
-        id = entry['_id']
-        upsert_entry(id, entry, collection)
+    for entry in phonebook:
+        insert_entry(entry, collection)
 
     return 'SUCCESS'
 
@@ -138,6 +107,7 @@ directories = get_directories()
 info = ' # Found ' + str(len(directories)) + ' directories'
 log('INFO', info)
 files = []
+total_entries = 0
 for dir in directories:
     dirname = dir['name']
     dir['files'] = get_files_in_dir(dirname)
@@ -145,6 +115,10 @@ for dir in directories:
     # for file in dir['files']:
     #     save_entries_to_db(dir['name'], file)
     data = files_to_array(dir)
+    total_entries += len(data)
     send_to_db(dirname[:7], data)
+    info = ' Number of total entries added to database' + total_entries
+    log('INFO', info)
+    data = [] # explicitly clear
 
 log('INFO', ' SUCCESS - All files added to database')
