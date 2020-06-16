@@ -79,7 +79,7 @@ def files_to_array(dir):
             continue
         with open(phonebookDir + dirname + file, 'r', encoding=encoding) as data:
             for i, line in enumerate(data):
-                if len(phonebook) >= i:
+                if i + 1 >= len(phonebook):
                     entry = {}
                     entry['_id'] = int(i)
                     phonebook.append(entry)
@@ -94,7 +94,9 @@ def files_to_array(dir):
     return phonebook
 
 def send_to_db(collection, phonebook):
-    print('Inserting into Database')
+    info = 'Inserting into Database'
+    print(info)
+    log('INFO', info)
     for entry in phonebook:
         insert_entry(entry, collection)
 
