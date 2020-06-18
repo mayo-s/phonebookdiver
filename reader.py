@@ -1,5 +1,5 @@
 import os
-from mongodb_helper import upsert_entry, insert_entry
+from mongodb_helper import upsert_entry, insert_entry, insert_entries
 from log_helper import log
 
 # Read files
@@ -87,7 +87,7 @@ def files_to_array(dir):
                 if line.strip() == '':
                     continue
 
-                phonebook[i][field_name] = line.strip()
+                # phonebook[i][field_name] = line.strip()
     info = str(len(phonebook)) + ' phonebook entries found'
     log('INFO', info)
 
@@ -97,8 +97,17 @@ def send_to_db(collection, phonebook):
     info = 'Inserting into Database'
     print(info)
     log('INFO', info)
-    for entry in phonebook:
-        insert_entry(entry, collection)
+    # for entry in phonebook:
+    #     insert_entry(entry, collection)
+    i = 0
+    while i < len(phonebook):
+        start = int(i)
+        stop = start + 999
+        if stop >= len(phonebook):
+            stop = len(phonebook) -1
+        entries = phonebook[start:stop]
+        insert_entries(entries, collection)
+        i += 1000
 
     return 'SUCCESS'
 
