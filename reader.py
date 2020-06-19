@@ -1,4 +1,5 @@
 import os
+import sys
 from mongodb_helper import upsert_entry, insert_entry, insert_entries
 from log_helper import log
 
@@ -35,6 +36,7 @@ fields = {
     '99_Strassenname': 'street_name'
 }
 
+
 def get_directories():
     directories = []
     for dirname in os.listdir(phonebookDir):
@@ -57,13 +59,14 @@ def get_files_in_dir(dir):
 
 
 def get_encoding(dirname):
-# choose correct encoding
+    # choose correct encoding
     year = int(dirname[:4])
     if(year < 2004 and dir != '2003_Q3'):
         return enc[0]
     else:
         return enc[1]
-    
+
+
 def files_to_array(dir):
     dirname = dir['name']
     files = dir['files']
@@ -83,15 +86,18 @@ def files_to_array(dir):
                     entry = {}
                     entry['_id'] = int(i)
                     phonebook.append(entry)
-                
-                if line.strip() == '':
+
+                if line.strip() is '':
                     continue
 
-                # phonebook[i][field_name] = line.strip()
+                phonebook[i][field_name] = str(line.strip())
     info = str(len(phonebook)) + ' phonebook entries found'
+    log('INFO', info)
+    info = str(sys.getsizeof(phonebook) + 'bytes - current phonebook size')
     log('INFO', info)
 
     return phonebook
+
 
 def send_to_db(collection, phonebook):
     info = 'Inserting into Database'
@@ -104,7 +110,7 @@ def send_to_db(collection, phonebook):
         start = int(i)
         stop = start + 999
         if stop >= len(phonebook):
-            stop = len(phonebook) -1
+            stop = len(phonebook) - 1
         entries = phonebook[start:stop]
         insert_entries(entries, collection)
         i += 1000
@@ -130,6 +136,6 @@ for dir in directories:
     send_to_db(dirname[:7], data)
     info = ' Number of total entries added to database' + total_entries
     log('INFO', info)
-    data = [] # explicitly clear
+    data = []  # explicitly clear
 
 log('INFO', ' SUCCESS - All files added to database')
