@@ -5,7 +5,7 @@ from log_helper import log
 
 # Read files
 phonebookDir = 'data/'
-ignore = ['.DS_Store', 'archive', 'yellow_2017_Q3']
+ignore = ['.DS_Store', 'archive', 'yellow_2017_Q3', '90_Geokoordinaten_hnr', '91_geokoordinaten_str', '99_Strassenname']
 enc = ['cp437', 'iso-8859-1']
 fields = {
     '01_Flags': 'flags',
@@ -17,8 +17,9 @@ fields = {
     '05_Adresszusatz': 'adress_suffix',
     '06_Ortszusatz': 'city_suffix',
     '07_Strasse': 'street',
+    '07_Strassenindex': 'street_index',
     '08_Hausnummer': 'street_number',
-    '07_08_Strassenindex_Hausnummer': 'street_index',
+    '07_08_Strassenindex_Hausnummer': 'street_index_hnr',
     '09_Fax_Verweise': 'fax',
     '09_Verweise': 'reference',
     '10_Postleitzahl': 'zip',
@@ -71,6 +72,11 @@ def files_to_array(dir):
     dirname = dir['name']
     files = dir['files']
     encoding = get_encoding(dirname)
+
+    info = f'{dirname} ({encoding})'
+    print(info)
+    log('INFO', info)
+
     phonebook = []
     for file in files:
         info = 'caching ' + dirname + file
@@ -93,7 +99,7 @@ def files_to_array(dir):
                 phonebook[i][field_name] = str(line.strip())
     info = str(len(phonebook)) + ' phonebook entries found'
     log('INFO', info)
-    info = str(sys.getsizeof(phonebook) + 'bytes - current phonebook size')
+    info = str(sys.getsizeof(phonebook)) + ' bytes - current phonebook size'
     log('INFO', info)
 
     return phonebook
@@ -103,8 +109,6 @@ def send_to_db(collection, phonebook):
     info = 'Inserting into Database'
     print(info)
     log('INFO', info)
-    # for entry in phonebook:
-    #     insert_entry(entry, collection)
     i = 0
     while i < len(phonebook):
         start = int(i)
@@ -112,7 +116,10 @@ def send_to_db(collection, phonebook):
         if stop >= len(phonebook):
             stop = len(phonebook) - 1
         entries = phonebook[start:stop]
-        insert_entries(entries, collection)
+        resp = insert_entries(entries, collection)
+        if resp is 'FAILED':
+            print(f'Insert failed {collection}')
+            return None
         i += 1000
 
     return 'SUCCESS'
@@ -124,18 +131,14 @@ directories = get_directories()
 info = ' # Found ' + str(len(directories)) + ' directories'
 log('INFO', info)
 files = []
-total_entries = 0
 for dir in directories:
     dirname = dir['name']
+    collection_name = dirname[:7]
     dir['files'] = get_files_in_dir(dirname)
     log('INFO', ' -->')
-    # for file in dir['files']:
-    #     save_entries_to_db(dir['name'], file)
     data = files_to_array(dir)
-    total_entries += len(data)
-    send_to_db(dirname[:7], data)
-    info = ' Number of total entries added to database' + total_entries
-    log('INFO', info)
-    data = []  # explicitly clear
+    print(collection_name)
+    send_to_db(collection_name, data)
+    del data[:]  # explicitly clear
 
 log('INFO', ' SUCCESS - All files added to database')
