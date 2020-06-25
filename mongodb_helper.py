@@ -2,17 +2,17 @@ import pymongo
 from pymongo import MongoClient
 from log_helper import log
 
-MONGO_URI = 'mongodb://localhost:27017'
+MONGO_URI = 'mongodb://mayo-nas:27017'
 
 try:
   client = MongoClient(MONGO_URI)
   db = client.phonebookdiver 
-except pymongo.errors as err:
+except pymongo.errors.ConnectionFailure as err:
   log('LB', '')
-  log('WARNING', err)
+  log('WARNING', str(err))
 else:
   log('LB', '')
-  info = 'CONNECTED to ' + MONGO_URI + db.name
+  info = 'CONNECTED to ' + MONGO_URI + ' ' + db.name
   log('INFO', info)
 
 def get_database():
@@ -23,12 +23,39 @@ def get_collection(name):
 
 def insert_entry(entry, collection):
   c = get_collection(collection)
-  c.insert_one(entry)
+  try:
+    c.insert_one(entry) 
+  except pymongo.errors.DocumentTooLarge as err:
+    log('WARNING', str(err))
+    return 'FAILED'
+  except pymongo.errors.OperationFailure as err:
+    log('WARNING', str(err))
+    return 'FAILED'
+  else:
+    return 'SUCCESS'
 
 def insert_entries(entries, collection):
   c = get_collection(collection)
-  c.insert_many(entries)
+  try:
+    c.insert_many(entries)
+  except pymongo.errors.DocumentTooLarge as err:
+    log('WARNING', str(err))
+    return 'FAILED'
+  except pymongo.errors.OperationFailure as err:
+    log('WARNING', str(err))
+    return 'FAILED'
+  else:
+    return 'SUCCESS'
 
 def upsert_entry(id, entry, collection):
   c = get_collection(collection)
-  c.update(id, entry, upsert=True)
+  try:
+    c.update(id, entry, upsert=True)
+  except pymongo.errors.DocumentTooLarge as err:
+    log('WARNING', str(err))
+    return 'FAILED'
+  except pymongo.errors.OperationFailure as err:
+    log('WARNING', str(err))
+    return 'FAILED'
+  else:
+    return 'SUCCESS'
