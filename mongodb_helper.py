@@ -1,6 +1,11 @@
 import pymongo
 from pymongo import MongoClient
-from log_helper import log
+from helper import log
+
+# author: Mario Schuetz
+#
+# Provide database functionality
+#
 
 MONGO_URI = 'mongodb://mayo-nas:27017'
 
