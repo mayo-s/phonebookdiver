@@ -38,18 +38,20 @@ def clean_spec_chars(dir):
     # only use utf-8 converted files
     if('utf-8' not in file):
       continue
+    
+    # clean only backup file
+    if '1998' in file:
+      info = f'Cleaning {dirname} {file}'
+      log('INFO', info)
 
-    info = f'Cleaning {dirname} {file}'
-    log('INFO', info)
+      with open(phonebookDir + dirname + file, 'r', encoding=enc) as data:
+        content = data.read()
 
-    with open(phonebookDir + dirname + file, 'r', encoding=enc) as data:
-      content = data.read()
+      for line in content:
+        line = check_substring(line)
 
-    for line in content:
-      line = check_substring(line)
-
-    with open(phonebookDir + dirname + file, 'w', encoding=enc) as data:
-      data = data.write(content)
+      with open(phonebookDir + dirname + file, 'w', encoding=enc) as data:
+        data = data.write(content)
 
 def check_substring(line):
   for sc in special_chars:
