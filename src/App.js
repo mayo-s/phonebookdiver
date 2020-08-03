@@ -1,21 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Switch, Route } from 'react-router-dom';
+import Navbar from './components/layout/Navbar';
+import Dashboard from './components/dashboard/Dashboard';
 
 function App() {
-  const [currentTime, setCurrentTime] = useState(0);
-
-  useEffect(() => {
-    fetch('/time').then(res => res.json()).then(data => {
-      setCurrentTime(data.time);
-    });
-  }, []);
-
   return (
-    <div className="App">
-
-      <h1>The Phonebookdiver</h1>
-
-      <p>The current time is {currentTime}.</p>
-    </div>
+    <BrowserRouter>
+      <div className="App">
+        <Navbar />
+        <Switch>
+          <Route exact path='/' component={Dashboard} />
+          {/* <Route path='/heatmap' component={HeatMap} /> */}
+          {/* <Route path='/imprint' component={Imprint} /> */}
+        </Switch>
+      </div>
+    </BrowserRouter>
   );
 }
 
