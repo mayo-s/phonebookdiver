@@ -2,8 +2,8 @@
 .DS_Store
 bin/
 data/
+spec_chars
 *.swp
-*.json
 *.cnf
 *.xml
 .env.local
