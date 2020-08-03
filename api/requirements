@@ -1,3 +1,6 @@
 flask
+flask-PyMongo
+mongoengine
 python-dotenv
+
 

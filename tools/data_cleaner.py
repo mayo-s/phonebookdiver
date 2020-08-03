@@ -16,8 +16,6 @@ special_chars = {
   '▄': 'Ü',
   'ⁿ': 'ü',
   '▀': 'ß',
-  '  ': ' ', # double space to single space
-  ' ': ' ', # tab to single space
 }
 
 def get_files():

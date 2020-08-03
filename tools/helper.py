@@ -10,7 +10,7 @@ from datetime import datetime
 #
 
 phonebookDir = 'data/'
-ignore = ['.DS_Store', 'archive', 'yellow_2017_Q3', '90_Geokoordinaten_hnr', '91_geokoordinaten_str', '99_Strassenname', '90_Geokoordinaten_hnr_utf-8', '91_geokoordinaten_str_utf-8', '99_Strassenname_utf-8']
+ignore = ['.DS_Store', 'archive', 'yellow_2017_Q3', '90_Geokoordinaten_hnr', '91_Geokoordinaten_str', '99_Strassenname', '90_Geokoordinaten_hnr_utf-8', '91_Geokoordinaten_str_utf-8', '99_Strassenname_utf-8']
 logging.basicConfig(filename='_phonebookdiver.log', level=logging.DEBUG)
 encoding = ['cp437', 'iso-8859-1']
 

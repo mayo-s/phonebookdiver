@@ -35,7 +35,7 @@ fields = {
   '14_15_Email_Webadresse': 'email_web',
   '16_Koordinaten': 'coordinates',
   '90_Geokoordinaten_hnr': 'geocoords_stnr',
-  '91_geokoordinaten_str': 'geocoords_str',
+  '91_Geokoordinaten_str': 'geocoords_str',
   '99_Strassenname': 'street_name'
 }
 
@@ -121,6 +121,7 @@ def start():
     collection_name = dirname[:7]
   # send_to_db(collection_name, data)
     del data[:]  # explicitly clear
+  print('READER Done.')
 
   # log('INFO', ' SUCCESS - All files added to database')
 
