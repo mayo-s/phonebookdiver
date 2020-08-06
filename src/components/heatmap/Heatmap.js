@@ -1,47 +1,53 @@
 import React, { Component } from 'react';
-import GoogleMapReact from 'google-map-react';
-
-const AnyReactComponent = ({ text }) => <div>{text}</div>;
+import { Map, TileLayer } from 'react-leaflet';
+import HeatmapLayer from './HeatmapLayer';
 
 class Heatmap extends Component {
-  static defaultProps = {
+  
+  state = {
+    mapHidden: false,
+    layerHidden: false,
+    radius: 2,
+    blur: 10,
+    max: 0.5,
+    // Center of Berlin
     center: {
-      // Center to Berlin
       lat: 52.5200,
-      lng: 13.4050
+      lng: 13.4050,
     },
-    zoom: 11
+    zoom: 11,
   };
-
+  
   render() {
-    var heatMapData = {    
+    var heatMapData = {
       positions: [
-        {lat: 52.5200, lng: 13.3700},
-        {lat: 52.5252, lng: 13.5000},
-        {lat: 52.4244, lng: 13.7498}
+        [ 52.5200, 13.3700 ], 
+        [ 52.5252, 13.5000 ],
+        [ 52.4244, 13.7498 ]
       ],
-      options: {   
-        radius: 50,   
-        opacity: 0.6,
-    }};
+    };
 
+    const position = [this.state.center.lat, this.state.center.lng];
+    const gradient = {
+      0.1: '#89BDE0', 0.2: '#96E3E6', 0.4: '#82CEB6',
+      0.6: '#FAF3A5', 0.8: '#F5D98B', '1.0': '#DE9A96'
+    };
     return (
-      <div style={{ height: '90vh', width: '100%' }}>
-        <GoogleMapReact
-          bootstrapURLKeys={{ key: process.env.REACT_APP_GOOGLE_API_KEY }}
-          defaultCenter={this.props.center}
-          defaultZoom={this.props.zoom}
-          heatmapLibrary={true}
-          heatmap={heatMapData}
-        >
 
-          <AnyReactComponent
-            lat={52.5200}
-            lng={13.4050}
-            text="Center"
-          />
-        </GoogleMapReact>
-      </div>
+      <Map center={position} zoom={this.state.zoom}>
+        <HeatmapLayer
+          fitBoundsOnLoad
+          fitBoundsOnUpdate
+          points={heatMapData.positions}
+          latitudeExtractor={m => m[0]}
+          longitudeExtractor={m => m[1]}
+          intensityExtractor={m => parseFloat(m[2])} />
+        <TileLayer
+          attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+      </Map>
+
     );
   }
 }
