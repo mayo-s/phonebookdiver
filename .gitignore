@@ -6,10 +6,6 @@ spec_chars
 *.swp
 *.cnf
 *.xml
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
 # pip
 pip-selfcheck.json
