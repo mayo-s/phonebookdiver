@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Switch, Route } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import Dashboard from './components/dashboard/Dashboard';
+import Map from './components/heatmap/Map';
 
 function App() {
   return (
@@ -10,7 +11,7 @@ function App() {
         <Navbar />
         <Switch>
           <Route exact path='/' component={Dashboard} />
-          {/* <Route path='/heatmap' component={HeatMap} /> */}
+          <Route path='/heatmap' component={Map} />
           {/* <Route path='/imprint' component={Imprint} /> */}
         </Switch>
       </div>
