@@ -16,11 +16,14 @@ except pymongo.errors.ConnectionFailure as err:
 else:
     print(f'CONNECTED to {MONGO_URI} {db.name}')
 
-def get_database():
-  return db
+# def get_database():
+#   return db
 
 def get_collection(name):
   return db[name]
+
+def get_all_collections():
+  return dict.fromkeys(db.list_collection_names(), 'name')
 
 def count_lastnames():
   try:
@@ -29,19 +32,5 @@ def count_lastnames():
     print(str(err))
     return 'FAILED'
   else:
-    print(f'Found {result} matches in collection')
     return str(result)
-
-
-# def insert_entry(entry, collection):
-#   c = get_collection(collection)
-#   try:
-#     c.insert_one(entry) 
-#   except pymongo.errors.DocumentTooLarge as err:
-#     log('WARNING', str(err))
-#     return 'FAILED'
-#   except pymongo.errors.OperationFailure as err:
-#     log('WARNING', str(err))
-#     return 'FAILED'
-#   else:
-#     return 'SUCCESS'
+  
