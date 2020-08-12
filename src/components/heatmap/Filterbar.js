@@ -1,22 +1,40 @@
-import React from 'react';
+import React, { Component } from 'react';
 
-const Filterbar = () => {
-  return (
-    <div className="wrapper grey darken-2">
-      <div className="container">
-        Slider here!
-        <a className='dropdown-trigger btn' href='#' data-target='field'>Choose</a>
-        <ul id='field' className='dropdown-content'>
-            <li><a href="#!">Firstname</a></li>
-            <li><a href="#!">Lastname</a></li>
-            <li className="divider" tabIndex="-1"></li>
-            <li><a href="#!">City</a></li>
-            <li><a href="#!">Zip</a></li>
-        </ul>
-        Textfield here!
-      </div>
-    </div>
-  )
+class Filterbar extends Component {
+
+  state = {
+    collection: '',
+    field: '',
+    search_string: '',
+  }
+
+  handleChange = (e) => {
+    this.setState({
+      [e.target.id]: e.target.value
+    })
+  }
+
+  render () {
+    return (
+      <div className="wrapper grey darken-2">
+          <div className="row">
+            <div className="col s12 m4">
+              Slider here!
+            </div>
+            <div className="col s6 m4">
+
+            </div>
+            <div className="col s6 m4">
+              <div className="input-field">
+                <label htmlFor="title">Search String</label>
+                <input className="white-text" type="text" id="search_string" onChange={this.handleChange} />
+              </div>
+            </div>
+          </div>
+        </div>
+    )
+  }
+
 }
 
 export default Filterbar
