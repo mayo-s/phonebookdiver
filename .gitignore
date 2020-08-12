@@ -6,6 +6,7 @@ spec_chars
 *.swp
 *.cnf
 *.xml
+settings.json
 
 # pip
 pip-selfcheck.json
