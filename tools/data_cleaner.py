@@ -8,14 +8,23 @@ from helper import get_main_dir, get_directories, get_files_in_dir, get_encoding
 log('LB', '')
 log('INFO', 'DATA CLEANER Running')
 directories = []
+
+# Umlaut  File    Database
+# Ä =     ─       ΓöÇ       
+# ä =     Σ       ╬ú
+# Ö =     ╓       Γòô
+# ö =     ÷       ├╖
+# Ü =     ▄       Γûä
+# ü =     ⁿ       Γü┐
+# ß =     ▀       ΓûÇ
 special_chars = {
-  '─': 'Ä',
-  'Σ': 'ä',
-  '╓': 'Ö',
-  '÷': 'ö',
-  '▄': 'Ü',
-  'ⁿ': 'ü',
-  '▀': 'ß',
+  'ΓöÇ': 'Ä',
+  '╬ú': 'ä',
+  'Γòô': 'Ö',
+  '├╖': 'ö',
+  'Γûä': 'Ü',
+  'Γü┐': 'ü',
+  'ΓûÇ': 'ß',
 }
 
 def get_files():
