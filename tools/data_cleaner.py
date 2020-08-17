@@ -9,14 +9,6 @@ log('LB', '')
 log('INFO', 'DATA CLEANER Running')
 directories = []
 
-# Umlaut  File    Database
-# Ä =     ─       ΓöÇ       
-# ä =     Σ       ╬ú
-# Ö =     ╓       Γòô
-# ö =     ÷       ├╖
-# Ü =     ▄       Γûä
-# ü =     ⁿ       Γü┐
-# ß =     ▀       ΓûÇ
 special_chars = {
   'ΓöÇ': 'Ä',
   '╬ú': 'ä',
@@ -50,14 +42,17 @@ def clean_spec_chars(dir):
     info = f'Cleaning {dirname} {file}'
     log('INFO', info)
 
+    cleaned_data = []
     with open(phonebookDir + dirname + file, 'r', encoding=enc) as data:
-      content = data.read()
+      line = data.readline()
+      while line:
+        line = check_substring(line)
+        cleaned_data.append(line)
+        line = data.readline()
 
-    for line in content:
-      line = check_substring(line)
-
-    with open(phonebookDir + dirname + file, 'w', encoding=enc) as data:
-      data = data.write(content)
+    with open(phonebookDir + dirname + file + '_new', 'w', encoding=enc) as data:
+      for entry in cleaned_data:
+        data.write('%s\n' % entry)
 
 def check_substring(line):
   for sc in special_chars:
