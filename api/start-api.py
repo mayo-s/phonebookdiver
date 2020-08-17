@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from requester import count_lastnames, get_all_collections, find_entries
 
 # author: Mario Schuetz
@@ -7,6 +8,7 @@ from requester import count_lastnames, get_all_collections, find_entries
 #
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route('/all_collections')
 def all_collections():
@@ -26,4 +28,5 @@ def search():
 
   return jsonify(find_entries(collection, key, value))
 
-app.run(debug=True)
+if __name__ == '__main__':
+  app.run(debug=True)
