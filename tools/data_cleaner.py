@@ -5,10 +5,6 @@ from helper import get_main_dir, get_directories, get_files_in_dir, get_encoding
 # Clean data from special chars etc.
 #
 
-log('LB', '')
-log('INFO', 'DATA CLEANER Running')
-directories = []
-
 special_chars = {
   'ΓöÇ': 'Ä',
   '╬ú': 'ä',
@@ -63,9 +59,13 @@ def check_substring(line):
 
 
 # START
-directories = get_files()
-for dir in directories:
-  clean_spec_chars(dir)
+def start():
+  log('LB', '')
+  log('INFO', 'DATA CLEANER Running')
+  directories = get_files()
+  for dir in directories:
+    clean_spec_chars(dir)
 
-log('INFO', 'DATA CLEANER Done')
+  log('INFO', 'DATA CLEANER Done')
 
+# start()

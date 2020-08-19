@@ -1,5 +1,7 @@
 from helper import get_main_dir, get_directories, get_files_in_dir, get_encoding, log
-from mongodb_helper import upsert_entry, insert_entry, insert_entries
+from mongodb_helper import upsert_entry, insert_entry, insert_entries, get_overview
+from data_cleaner import check_substring
+import json
 import sys
 
 # author: Mario Schuetz
@@ -9,6 +11,7 @@ import sys
 
 enc = ['cp437', 'iso-8859-1']
 phonebookDir = get_main_dir()
+collection_overview = get_overview()
 fields = {
   '01_Flags': 'flags',
   '02_Nachname': 'lastname',
@@ -58,7 +61,7 @@ def files_to_array(dir):
     info = 'caching ' + dirname + file
     log('INFO', info)
 
-    # ignore utf-8 in filename
+    # ignore utf-8-String in filename
     field_name = fields.get(file[:-6], '')
     if field_name is '':
       msg = file + ' does not have a field name'
@@ -74,7 +77,7 @@ def files_to_array(dir):
 
         if line.strip() is '':
           continue
-
+        line = check_substring(line)
         phonebook[i][field_name] = str(line.strip())
 
   info = str(len(phonebook)) + ' phonebook entries found'
@@ -83,46 +86,24 @@ def files_to_array(dir):
   log('INFO', info)
 
   # Write to local file for backup
-  with open(phonebookDir + dirname + dirname[:-1] + '_utf-8', 'w', encoding='utf-8') as data:
-    for entry in phonebook:
-        data.write('%s\n' % entry)
+  with open(phonebookDir + dirname + dirname[:-1] + '_json', 'w', encoding='utf-8') as file:
+    json.dump(phonebook, file)
   log('INFO', f'BACKUP file created {dirname[:-1]}')
 
   return phonebook
 
-def send_to_db(collection, phonebook):
-  info = 'Inserting into Database'
-  print(info)
-  log('INFO', info)
-  i = 0
-  while i < len(phonebook):
-    start = int(i)
-    stop = start + 999
-    if stop >= len(phonebook):
-      stop = len(phonebook) - 1
-    entries = phonebook[start:stop]
-    resp = insert_entries(entries, collection)
-    if resp is 'FAILED':
-      print(f'Insert failed {collection}')
-      return None
-    i += 1000
-
-  return 'SUCCESS'
-
 # WORKFLOW
-def start():
+def reader():
   directories = get_directories()
   files = []
   for dir in directories:
     dirname = dir['name']
-    dir['files'] = get_files_in_dir(dirname)
-    log('INFO', ' -->')
-    data = files_to_array(dir)
-    collection_name = dirname[:7]
-  # send_to_db(collection_name, data)
-    del data[:]  # explicitly clear
-  print('READER Done.')
+    if dirname[:7] not in collection_overview:
+      dir['files'] = get_files_in_dir(dirname)
+      log('INFO', ' -->')
+      data = files_to_array(dir)
+      collection_name = dirname[:7]
+      del data[:]  # explicitly clear
+  print('READER Done')
 
-  # log('INFO', ' SUCCESS - All files added to database')
-
-start()
+  log('INFO', ' READER Done')

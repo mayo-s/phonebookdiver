@@ -1,4 +1,5 @@
 from helper import get_main_dir, get_directories, get_files_in_dir, get_encoding, log
+from mongodb_helper import get_overview
 
 # author: Mario Schuetz
 #
@@ -8,6 +9,7 @@ from helper import get_main_dir, get_directories, get_files_in_dir, get_encoding
 log('LB', '')
 log('INFO', 'CONVERTER Running')
 directories = []
+collection_overview = get_overview()
 
 def get_files():
   directories = get_directories()
@@ -39,8 +41,12 @@ def change_enc(dir):
       data = data.write(content)
 
 # START
-directories = get_files()
-for dir in directories:
-  change_enc(dir)
-
-log('INFO', 'CONVERTER Done')
+def encoder():
+  get_overview()
+  directories = get_files()
+  for dir in directories:
+    dirname = dir['name']
+    if dirname[:7] not in collection_overview:
+      change_enc(dir)
+  print('CONVERTER Done')
+  log('INFO', 'CONVERTER Done')

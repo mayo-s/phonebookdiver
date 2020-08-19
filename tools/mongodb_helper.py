@@ -26,6 +26,9 @@ def get_database():
 def get_collection(name):
     return db[name]
 
+def get_all_collections():
+  return dict.fromkeys(db.list_collection_names(), 'name')
+
 def insert_entry(entry, collection):
   c = get_collection(collection)
   try:
@@ -64,3 +67,11 @@ def upsert_entry(id, entry, collection):
     return 'FAILED'
   else:
     return 'SUCCESS'
+
+def get_overview():
+  collection_overview = []
+  collections = get_all_collections()
+  for c in collections:
+    collection_overview.append(c)
+  # print(collection_overview)
+  return collection_overview
