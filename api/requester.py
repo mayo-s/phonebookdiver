@@ -38,13 +38,19 @@ def count_lastnames(value):
 
 def find_entries(collection, key, value):
   value = revert_spec_chars(value)
-  # print(f'Searching for {value} in {collection, key}')
+  print(f'Searching for {value} in {collection, key}')
   results = get_collection(collection).find({key: value}, { '_id': 1, 'street': 1, 'street_number': 1, 'zip': 1, 'city': 1 })
+
   if results is None:
-    return 'NO MATCH FOUND'
+    return []
   list = []
   for result in results:
-    list.append(geocoding(result))
+    # TODO check if database lat-lng is None/Empty before geocoding
+    # if so - UPDATE database after geocoding
+    if result.get('lat') is not None and result.get('lng') is not None:
+      list.append([result.get('lat'), result.get('lng')])
+    else:
+      list.append(geocoding(result))
   return list
 
 def geocoding(address):
@@ -78,16 +84,16 @@ def geocoding(address):
   # print(response.status_code)
   # print(response.text)
   response = response.json()
-  coords = {
-    'lat': '',
-    'lng': ''
-  }
+  
+  # print test data / API use only
+  # if len(response) > 0:
+  #   address['lat'] = float(response[0].get('lat'))
+  #   address['lng'] = float(response[0].get('lon'))
+  #   return address
+
   if len(response) > 0:
-    # address['lat'] = response[0].get('lat')
-    # address['lng'] = response[0].get('lon')
-    coords['lat'] = response[0].get('lat')
-    coords['lng'] = response[0].get('lon')    
-  return coords
+    return [float(response[0].get('lat')), float(response[0].get('lon'))]
+  return []
 
 def spec_chars(str):
   special_chars = {
