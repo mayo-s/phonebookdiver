@@ -6,37 +6,37 @@ import sys
 
 # author: Mario Schuetz
 #
-# Read all data and insert into database
+# Read and combine all data, then create json backup file
 #
 
 enc = ['cp437', 'iso-8859-1']
 phonebookDir = get_main_dir()
 collection_overview = get_overview()
 fields = {
-  '01_Flags': 'flags',
+  # '01_Flags': 'flags',
   '02_Nachname': 'lastname',
   '03_Vorname': 'firstname',
-  '04_Namenszusatz': 'name_suffix',  # name abbrevation like 'jr', 'sr'
-  '04_Zusaetze': 'name_ext1',  # additional name information
-  '04_05_Namenszusatz_Addresszusatz': 'name_ext2',
-  '05_Adresszusatz': 'adress_suffix',
+  # '04_Namenszusatz': 'name_suffix',  # name abbrevation like 'jr', 'sr'
+  # '04_Zusaetze': 'name_ext1',  # additional name information
+  # '04_05_Namenszusatz_Addresszusatz': 'name_ext2',
+  # '05_Adresszusatz': 'adress_suffix',
   '06_Ortszusatz': 'city_suffix',
   '07_Strasse': 'street',
   '07_Strassenindex': 'street_index',
   '08_Hausnummer': 'street_number',
   '07_08_Strassenindex_Hausnummer': 'street_index_hnr',
-  '09_Fax_Verweise': 'fax',
-  '09_Verweise': 'reference',
+  # '09_Fax_Verweise': 'fax',
+  # '09_Verweise': 'reference',
   '10_Postleitzahl': 'zip',
   '10_Zustellamt_PLZOst': 'zip_deloffice',  # zip east delivery office
   '11_Ort': 'city',
   '11_Ort_Gemeinde': 'city_county',
   '12_Vorwahl': 'area_code',
   '13_Rufnummer': 'phonenumber',
-  '14_Email': 'email',
-  '15_Webadresse': 'webaddress',
-  '14_15_Email_Webadresse': 'email_web',
-  '16_Koordinaten': 'coordinates',
+  # '14_Email': 'email',
+  # '15_Webadresse': 'webaddress',
+  # '14_15_Email_Webadresse': 'email_web',
+  # '16_Koordinaten': 'coordinates',
   '90_Geokoordinaten_hnr': 'geocoords_stnr',
   '91_Geokoordinaten_str': 'geocoords_str',
   '99_Strassenname': 'street_name'

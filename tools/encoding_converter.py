@@ -6,10 +6,8 @@ from mongodb_helper import get_overview
 # Change file encoding to utf-8
 #
 
-log('LB', '')
-log('INFO', 'CONVERTER Running')
-directories = []
 collection_overview = get_overview()
+directories = []
 
 def get_files():
   directories = get_directories()
@@ -42,11 +40,12 @@ def change_enc(dir):
 
 # START
 def encoder():
-  get_overview()
+  log('LB', '')
+  log('INFO', 'CONVERTER Running')
   directories = get_files()
   for dir in directories:
     dirname = dir['name']
     if dirname[:7] not in collection_overview:
       change_enc(dir)
   print('CONVERTER Done')
-  log('INFO', 'CONVERTER Done')
+  log('INFO', ' CONVERTER Done')

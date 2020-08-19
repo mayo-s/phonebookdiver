@@ -4,7 +4,7 @@ import json
 
 # author: Mario Schuetz
 #
-# Write files to database
+# Read json backup file and write data to database
 #
 
 collection_overview = get_overview()
