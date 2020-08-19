@@ -11,7 +11,7 @@ class Filterbar extends Component {
   handleChange = (e) => {
     this.setState({
       [e.target.id]: e.target.value
-    })
+    });
   }
 
   handleSubmit = (e) => {
@@ -19,7 +19,7 @@ class Filterbar extends Component {
     let url = 'http://localhost:5000/search?collection=' + this.state.collection + '&key=' + this.state.field + '&value=' + this.state.search_str;
     fetch(url)
       .then(response => response.json())
-      .then(data => this.props.get_coords(data));
+      .then(data => this.props.update_heatMapData(data));
   }
 
   render() {
