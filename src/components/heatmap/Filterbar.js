@@ -16,6 +16,7 @@ class Filterbar extends Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
+    // TODO double check for empty search string
     let url = 'http://localhost:5000/search?collection=' + this.state.collection + '&key=' + this.state.field + '&value=' + this.state.search_str;
     fetch(url)
       .then(response => response.json())
@@ -33,11 +34,13 @@ class Filterbar extends Component {
                 <input className="white-text" type="text" id="collection" onChange={this.handleChange} />
               </div>
             </div>
-            <div className="col s6 m3">
-              <div className="input-field">
-                <label htmlFor="field">Field</label>
-                <input className="white-text" type="text" id="field" onChange={this.handleChange} />
-              </div>
+            <div className="input-field col s6 m3">
+              <select className="browser-default" id="field" onChange={this.handleChange} >
+                <option value="" disabled selected>Choose field to query</option>
+                <option value="lastname">Lastname</option>
+                <option value="firstname">Firstname</option>
+                <option value="street">Street</option>
+              </select>
             </div>
             <div className="col s6 m3">
               <div className="input-field">
@@ -45,7 +48,7 @@ class Filterbar extends Component {
                 <input className="white-text" type="text" id="search_str" onChange={this.handleChange} />
               </div>
             </div>
-            <div className="col s6 m3">
+            <div className="input-field col s6 m3">
               <button className="btn center-align" >Search</button>
             </div>
           </form>
