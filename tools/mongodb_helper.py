@@ -75,3 +75,6 @@ def get_overview():
     collection_overview.append(c)
   # print(collection_overview)
   return collection_overview
+
+def create_coll_index(collection, field):
+  db.get_collection(collection).create_index(field)
