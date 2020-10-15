@@ -1,6 +1,10 @@
 import pymongo
 from pymongo import MongoClient
 import requests
+from geopy.extra.rate_limiter import RateLimiter
+from geopy.geocoders import Nominatim
+
+geolocator = Nominatim(user_agent="phonebookdiver")
 
 # author: Mario Schuetz
 #
@@ -48,16 +52,10 @@ def find_entries(collection, key, value):
   if results is None:
     return []
   results = sort_results_by_zip_and_city(results)
-  list = []
+  geo_list = []
   for result in results:
-    # TODO check if database lat-lng is None/Empty before geocoding
-    # if so - UPDATE database after geocoding
-    # print(result)
-    # if result.get('lat') is not None and result.get('lng') is not None:
-    #   list.append([result.get('lat'), result.get('lng')])
-    # else:
-    list.append(geocoding(result))
-  return list
+    geo_list.append(geocoding_single(result))
+  return geo_list
 
 
 def sort_results_by_zip_and_city(results):
@@ -65,35 +63,20 @@ def sort_results_by_zip_and_city(results):
   for r in results:
     zip = r.get('zip')
     city = r.get('city')
+    address = f'{zip} {city} Germany'
     found = False
     for sr in sorted_results:
-      if zip == sr.get('zip') and city == sr.get('city'):
+      if address == sr.get('address'):
         sr['count'] = sr.get('count') + 1
         found = True
         break
-    if not found: sorted_results.append({'zip': zip, 'city': city, 'count': 1})
+    if not found: sorted_results.append({'address': address, 'count': 1})
 
   return sorted_results
 
-def geocoding(address):
-  zip = ''
-  city = ''
-  street = ''
-  street_nr = ''
-  if address.get('zip') is not None:
-    zip = f'{address.get("zip")}%20'
-  if address.get('city') is not None:
-    city = f'{address.get("city")}%2C%20'
-  if address.get('street') is not None:
-    street = f'{address.get("street")}'
-    if street[len(street) - 1] is '-':
-      street = ''.join([street[:len(street) - 1], 'strasse'])
-    address['street'] = street
-    street = f'{street}%20'
-  if address.get('street_number') is not None:
-    street_nr = f'{address.get("street_number")}'
-
-  query_str = f'https://nominatim.openstreetmap.org/search.php?countrycode=de&q={zip}{city}{street}{street_nr}&format=jsonv2'
+def geocoding_single(address):
+  
+  query_str = f'https://nominatim.openstreetmap.org/search.php?countrycode=de&q={address.get("address")}&format=jsonv2'
   # print(f'\n{address}\n{query_str}\n')
   response = requests.get(query_str)
   response = response.json()
