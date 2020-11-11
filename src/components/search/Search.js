@@ -10,11 +10,11 @@ class Search extends Component {
     search_str: '',
 
     startError: '',
-    endError: '',
     keyError: '',
     strError: '',
 
     queryMsg: '',
+    results: [],
   }
 
   handleSubmit = (e) => {
@@ -22,7 +22,7 @@ class Search extends Component {
     const isValid = this.validateForm();
 
     if(isValid) {
-      let queryMsg = 'Querying the years from ' + this.state.collection_start.substr(0, 4) + ' to ' + this.state.collection_end.substr(0, 4) + ' for ' + this.state.key + ' = ' + this.state.search_str;
+      let queryMsg = 'Querying the years from ' + this.state.collection_start.substr(0, 4) + ' to ' + this.state.collection_end.substr(0, 4) + ' for ' + this.state.key + ' = ' + this.state.search_str + '.';
       this.setState({queryMsg})
       let url = 'http://localhost:5000/search?start=' + this.state.collection_start + '&end=' + this.state.collection_end + '&key=' + this.state.key + '&value=' + this.state.search_str;
       fetch(url)
@@ -32,10 +32,14 @@ class Search extends Component {
   }
 
   validateForm = () => {
-    let keyError, strError = '';
+    let keyError, strError, startError = '';
 
     if (!this.state.collection_start) this.setState({collection_start: this.state.first});
     if (!this.state.collection_end) this.setState({collection_end: this.state.last});
+    if (parseInt(this.state.collection_start.substr(0, 4)) > parseInt(this.state.collection_end.substr(0, 4))) {
+      startError = 'First YEAR value must be lower than second.';
+    }
+
     if(!this.state.key) {
       keyError = 'Please choose a FIELD to query';
     }
@@ -43,28 +47,26 @@ class Search extends Component {
       strError = 'Search string cannot be empty and must have at least 2 letters';
     }
 
-    if(keyError || strError) {
-      this.setState({keyError, strError});
+    if(startError || keyError || strError) {
+      this.setState({startError, keyError, strError});
       return false;
     }
 
-    this.setState({keyError, strError});
+    this.setState({startError, keyError, strError});
     return true
   }
 
   update_resultView = (data) => {
-
+    console.log(data);
+    let queryMsg = this.state.queryMsg + ' Found ' + data.length + ' entrie(s).';
+    this.setState({queryMsg, results: data});
   }
 
   handleChange = (e) => {
-    // TODO double check start and end year
-    if(e.target.id === 'collection_start' || e.target.id === 'collection_end') {
-      // doublecheck_range(e.target)
-    }
-    this.setState({
-      [e.target.id]: e.target.value
-    });
-    console.log(this.state);
+      this.setState({
+        [e.target.id]: e.target.value
+      });
+      // console.log(this.state);
   }
 
   getCollections = () => {
@@ -83,16 +85,30 @@ class Search extends Component {
       })
   }
 
+  addTableRow = (result) => {
+
+    return (
+      <tr>
+        <td>{result.firstname}</td>
+        <td>{result.lastname}</td>
+        <td>{result.zip}</td>
+        <td>{result.city}</td>
+        <td>{result.street} {result.street_number}</td>
+        <td>{result.area_code}</td>
+        <td>{result.phonenumber}</td>
+        <td>{result.appearance}</td>
+      </tr>)
+  }
+
   render() {
     if (!this.state.cOptions.length) this.getCollections();
+    let results = this.state.results;
 
     return (
       <div className='dashboard'>
 
         <div className="wrapper grey darken-2">
-
           <form onSubmit={this.handleSubmit}>
-            <div className="col">
 
               <div className="row">
                 <div className="input-field col s6 m3">
@@ -110,9 +126,6 @@ class Search extends Component {
                     <option value="" disabled selected>Choose End YEAR to query</option>
                     {this.state.cOptions}
                   </select>
-                  {this.state.endError ? (
-                    <div style={{fontSize: 12, color: "red"}}>{this.state.endError}</div>
-                  ) : null}
                 </div>
                 <div className="input-field col s6 m3">
                   <button className="btn center-align" >Search</button>
@@ -142,7 +155,6 @@ class Search extends Component {
                 </div>
               </div>
 
-            </div>
             <div className="row">
               {this.state.queryMsg ? (
                 <div>{this.state.queryMsg}</div>
@@ -150,6 +162,29 @@ class Search extends Component {
             </div>
           </form>
         </div>
+
+        <div className="row">
+          <table className="striped highlight">
+            <thead>
+              <tr>
+                <th>Firstname</th>
+                <th>Lastname</th>
+                <th>ZIP</th>
+                <th>City</th>
+                <th>Street</th>
+                <th>Area Code</th>
+                <th>Phone Number</th>
+                <th>Appearance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {results.map((result, index) => {
+                return this.addTableRow(result)
+              })}
+            </tbody>
+          </table>
+        </div>
+        
       </div>
     )
   }
