@@ -94,4 +94,44 @@ def geocoding_bulk(addresses):
 
   print(f'... {cnt_no_coords} with missing lat/lng')
   return coords
-  
+
+def search_colls(start, end, key, value):
+  collections = get_all_collections()
+  results = []
+  print(f'Querying the years from {start[:4]} to {end[:4]} for {key} = {value}')
+  for c in collections:
+    if c[:4] > end[:4]: continue
+    if c[:4] < start[:4]: continue
+
+    response = get_collection(c).find({key: value}, {'firstname': 1, 'lastname': 1, 'zip': 1, 'city': 1, 'street': 1, 'street_number': 1, 'area_code': 1, 'phonenumber': 1})
+    if response.count() <= 0: continue
+    
+    for r in response:
+      found = False
+      ln = r.get('lastname')
+      fn = r.get('firstname')
+      zip = r.get('zip')
+      city = r.get('city')
+      st = r.get('street')
+      stn = r.get('street_number')
+
+      # TODO: how to cope with same name at same address i.e. Michael Müller
+      for res in results:
+        if key == 'lastname':
+          if fn == res.get('firstname') and zip == res.get('zip') and city == res.get('city'):
+            res['appearance'].append(c)
+            found = True
+            break
+        if key == 'firstname':
+          if ln == res.get('lastname') and zip == res.get('zip') and city == res.get('city'):
+            res['appearance'].append(c)
+            found = True
+            break
+
+      if not found:
+        new_result = r
+        new_result['appearance'] = []
+        new_result['appearance'].append(c)
+        results.append(new_result)
+
+  return results

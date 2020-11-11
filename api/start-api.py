@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from requester import get_all_collections, find_entries
+from requester import get_all_collections, find_entries, search_colls
 
 # author: Mario Schuetz
 #
@@ -28,6 +28,17 @@ def hm_search():
     return 'NO VALUE'
 
   return jsonify(find_entries(collection, key, value))
+
+@app.route('/search')
+def search():
+  start = request.args.get('start')
+  end = request.args.get('end')
+  key = request.args.get('key')
+  value = request.args.get('value')
+
+  return jsonify(search_colls(start, end, key, value))
+
+
 
 if __name__ == '__main__':
   app.run(debug=True)
