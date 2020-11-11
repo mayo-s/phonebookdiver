@@ -21,27 +21,12 @@ except pymongo.errors.ConnectionFailure as err:
 else:
   print(f'CONNECTED to {MONGO_URI} {db.name}')
 
-# def get_database():
-#   return db
-
-
 def get_collection(name):
   return db[name]
 
 
 def get_all_collections():
   return dict.fromkeys(db.list_collection_names(), 'name')
-
-
-def count_lastnames(value):
-  try:
-    result = get_collection('1998_Q3').count_documents(
-      {'lastname': {'$regex': value}})
-  except pymongo.errors.OperationFailure as err:
-    print(str(err))
-    return 'FAILED'
-  else:
-    return str(result)
 
 
 def find_entries(collection, key, value):
@@ -52,13 +37,15 @@ def find_entries(collection, key, value):
   if results is None:
     return []
   results = sort_results_by_zip_and_city(results)
-  geo_list = []
-  for result in results:
-    geo_list.append(geocoding_single(result))
+  # geo_list = []
+  # for result in results:
+  #   geo_list.append(geocoding_single(result))
+  geo_list = geocoding_bulk(results)
   return geo_list
 
 
 def sort_results_by_zip_and_city(results):
+  print('Sorting...')
   sorted_results = []
   for r in results:
     zip = r.get('zip')
@@ -75,7 +62,7 @@ def sort_results_by_zip_and_city(results):
   return sorted_results
 
 def geocoding_single(address):
-  
+  print('GeoCoding...')
   query_str = f'https://nominatim.openstreetmap.org/search.php?countrycode=de&q={address.get("address")}&format=jsonv2'
   # print(f'\n{address}\n{query_str}\n')
   response = requests.get(query_str)
@@ -90,3 +77,21 @@ def geocoding_single(address):
   if len(response) > 0:
     return [float(response[0].get('lat')), float(response[0].get('lon')), address.get('count')]
   return []
+
+def geocoding_bulk(addresses):
+  print('GeoCoding...')
+  geolocator = Nominatim(user_agent='phonebookdiver')
+
+  geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1)
+  locations = [geocode(a.get('address')) for a in addresses]
+
+  coords = []
+  cnt_no_coords = 0
+  for l in locations:
+    try:
+      coords.append([l.latitude, l.longitude])
+    except AttributeError: cnt_no_coords +=1 
+
+  print(f'... {cnt_no_coords} with missing lat/lng')
+  return coords
+  

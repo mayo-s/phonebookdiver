@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from requester import count_lastnames, get_all_collections, find_entries
+from requester import get_all_collections, find_entries
 
 # author: Mario Schuetz
 #
