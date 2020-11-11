@@ -33,6 +33,16 @@ Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 The page will reload if you make edits.<br />
 You will also see any lint errors in the console.
 
+### `npm run-script start-api`  
+  
+Runs the API for database requests  
+Open [http://localhost:5000](http://localhost:5000) to view in browser.  
+Examples for API requests:  
+1. http://localhost:5000/search?collection=2020&key=lastname&value=Schmidt  
+Used for Heatmap requests - will return a list of Latitude and Longitude  
+2. http://localhost:5000/search?start=1990&end=2020&key=lastname&value=Schmidt  
+Will return all entries within the search range (similar entries will appear once with list of appearance)  
+
 ### `npm test`
 
 Launches the test runner in the interactive watch mode.<br />
