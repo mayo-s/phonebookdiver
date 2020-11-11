@@ -14,9 +14,10 @@ CORS(app)
 def all_collections():
   return get_all_collections()
 
-@app.route('/search')
-def search():
+@app.route('/hm_search')
+def hm_search():
   collection = request.args.get('collection')
+  # TODO: should already be checked on frontend!
   if collection is None:
     return 'NO COLLECTION'
   key = request.args.get('key')

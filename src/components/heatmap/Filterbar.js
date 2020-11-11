@@ -18,7 +18,7 @@ class Filterbar extends Component {
   handleSubmit = (e) => {
     e.preventDefault();
     // TODO double check for empty search string
-    let url = 'http://localhost:5000/search?collection=' + this.state.collection + '&key=' + this.state.field + '&value=' + this.state.search_str;
+    let url = 'http://localhost:5000/hm_search?collection=' + this.state.collection + '&key=' + this.state.field + '&value=' + this.state.search_str;
     fetch(url)
       .then(response => response.json())
       .then(data => this.props.update_heatMapData(data));
