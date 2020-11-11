@@ -31,10 +31,18 @@ def hm_search():
 
 @app.route('/search')
 def search():
-  start = request.args.get('start')
+  start = request.args.get('start')  
+  if start is None:
+    return 'INCORRECT RANGE (Start)'
   end = request.args.get('end')
+  if end is None:
+    return 'INCORRECT RANGE (End)'
   key = request.args.get('key')
+  if key is None:
+    return 'NO KEY'
   value = request.args.get('value')
+  if value is None:
+    return 'NO VALUE'
 
   return jsonify(search_colls(start, end, key, value))
 
