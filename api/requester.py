@@ -3,6 +3,7 @@ from pymongo import MongoClient
 import requests
 from geopy.extra.rate_limiter import RateLimiter
 from geopy.geocoders import Nominatim
+from operator import itemgetter
 
 geolocator = Nominatim(user_agent="phonebookdiver")
 
@@ -105,6 +106,7 @@ def search_colls(start, end, key, value):
 
     response = get_collection(c).find({key: value}, {'firstname': 1, 'lastname': 1, 'zip': 1, 'city': 1, 'street': 1, 'street_number': 1, 'area_code': 1, 'phonenumber': 1})
     if response.count() <= 0: continue
+    # print(f'Found {response.count()} results in {c}')
     
     for r in response:
       found = False
@@ -119,12 +121,12 @@ def search_colls(start, end, key, value):
       for res in results:
         if key == 'lastname':
           if fn == res.get('firstname') and zip == res.get('zip') and city == res.get('city'):
-            res['appearance'].append(c)
+            res['appearance'] = add_item_and_sort(res['appearance'], c)
             found = True
             break
         if key == 'firstname':
           if ln == res.get('lastname') and zip == res.get('zip') and city == res.get('city'):
-            res['appearance'].append(c)
+            res['appearance'] = add_item_and_sort(res['appearance'], c)
             found = True
             break
 
@@ -133,5 +135,9 @@ def search_colls(start, end, key, value):
         new_result['appearance'] = []
         new_result['appearance'].append(c)
         results.append(new_result)
-
+  print(f'Found {len(results)} total results')
   return results
+
+def add_item_and_sort(list, item):
+  list.append(item)
+  return sorted(list)
