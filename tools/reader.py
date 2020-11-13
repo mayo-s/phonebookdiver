@@ -16,7 +16,7 @@ fields = {
   # '01_Flags': 'flags',
   '02_Nachname': 'lastname',
   '03_Vorname': 'firstname',
-  # '04_Namenszusatz': 'name_suffix',  # name abbrevation like 'jr', 'sr'
+  '04_Namenszusatz': 'name_suffix',  # name abbrevation like 'jr', 'sr'
   # '04_Zusaetze': 'name_ext1',  # additional name information
   # '04_05_Namenszusatz_Addresszusatz': 'name_ext2',
   # '05_Adresszusatz': 'adress_suffix',
@@ -36,10 +36,10 @@ fields = {
   # '14_Email': 'email',
   # '15_Webadresse': 'webaddress',
   # '14_15_Email_Webadresse': 'email_web',
-  # '16_Koordinaten': 'coordinates',
-  '90_Geokoordinaten_hnr': 'geocoords_stnr',
-  '91_Geokoordinaten_str': 'geocoords_str',
-  '99_Strassenname': 'street_name'
+  '16_Koordinaten': 'coordinates',
+  # '90_Geokoordinaten_hnr': 'geocoords_stnr',
+  # '91_Geokoordinaten_str': 'geocoords_str',
+  # '99_Strassenname': 'street_name'
 }
 
 def files_to_array(dir):
@@ -55,20 +55,22 @@ def files_to_array(dir):
   for file in files:
 
     # only use utf-8 converted files
-    if('utf-8' not in file):
-      continue
+    # if('utf-8' not in file):
+    #   continue
     
     info = 'caching ' + dirname + file
     log('INFO', info)
 
     # ignore utf-8-String in filename
-    field_name = fields.get(file[:-6], '')
+    # TODO use cleaner way by explicitly ignoring
+    # field_name = fields.get(file[:-6], '')
+    field_name = fields.get(file, '')
     if field_name is '':
       msg = file + ' does not have a field name'
       log('WARNING', msg)
       continue
 
-    with open(phonebookDir + dirname + file, 'r', encoding=encoding) as data:
+    with open(phonebookDir + dirname + file, 'r', encoding='iso-8859-1') as data:
       for i, line in enumerate(data):
         if i + 1 >= len(phonebook):
           entry = {}
