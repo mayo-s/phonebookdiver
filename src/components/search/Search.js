@@ -61,6 +61,10 @@ class Search extends Component {
     this.setState({ queryMsg, results: data });
   }
 
+  update_results = (results) => {
+    this.setState({results})
+  }
+
   handleChange = (e) => {
     this.setState({
       [e.target.id]: e.target.value
@@ -87,7 +91,7 @@ class Search extends Component {
 
   render() {
     if (!this.state.cOptions.length) this.getCollections();
-    let results = this.state.results;
+    // let results = this.state.results;
 
     return (
       <div className='dashboard'>
@@ -149,7 +153,7 @@ class Search extends Component {
         </div>
 
         <div className="row querytable">
-          <ResultTable results = {this.state.results} />
+          <ResultTable results = {this.state.results} update_results = {this.update_results} />
         </div>
 
       </div>

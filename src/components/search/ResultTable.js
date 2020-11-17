@@ -32,16 +32,17 @@ class ResultTable extends Component {
   }
   
   createTable = (results) => {
+
     return (
       <table className="striped highlight ">
         <thead>
           <tr>
-            <th>Lastname</th>
-            <th>Firstname</th>
-            <th>City</th>
-            <th>ZIP</th>
+            <th onClick={() => this.sortByField('lastname')}>Lastname</th>
+            <th onClick={() => this.sortByField('firstname')}>Firstname</th>
+            <th onClick={() => this.sortByField('city')}>City</th>
+            <th onClick={() => this.sortByField('zip')}>ZIP</th>
             <th>Street</th>
-            <th>Area Code</th>
+            <th onClick={() => this.sortByField('area_code')}>Area Code</th>
             <th>Phone Number</th>
             <th>Appearance</th>
           </tr>
@@ -55,7 +56,19 @@ class ResultTable extends Component {
     )
   }
 
+  sortByField = (field) => {
+    let sorted_results = this.props.results;
+    if(field === 'lastname') sorted_results = this.props.results.sort((r1, r2) => (r1.lastname > r2.lastname ? 1 : -1));
+    else if(field === 'firstname') sorted_results = this.props.results.sort((r1, r2) => (r1.firstname > r2.firstname ? 1 : -1));
+    else if (field === 'city') sorted_results = this.props.results.sort((r1, r2) => (r1.city > r2.city ? 1 : -1));
+    else if(field === 'zip') sorted_results = this.props.results.sort((r1, r2) => (r1.zip > r2.zip ? 1 : -1));
+    else if(field === 'area_code') sorted_results = this.props.results.sort((r1, r2) => (r1.area_code > r2.area_code ? 1 : -1));
+
+    this.props.update_results(sorted_results);
+  }
+
   render() {
+    
     return(
       <div className="card material-table">
         {this.createTable(this.props.results)}
