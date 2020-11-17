@@ -45,7 +45,7 @@ class Filterbar extends Component {
 
     return (
       <div className="wrapper grey darken-2">
-        <div className="row">
+        <div className="row filterbar">
           <form onSubmit={this.handleSubmit}>
             <div className="input-field col s6 m3">
               <select className="browser-default" id="collection" onChange={this.handleChange} >
