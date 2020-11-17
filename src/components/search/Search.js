@@ -69,7 +69,6 @@ class Search extends Component {
     this.setState({
       [e.target.id]: e.target.value
     });
-    // console.log(this.state);
   }
 
   getCollections = () => {
@@ -91,7 +90,6 @@ class Search extends Component {
 
   render() {
     if (!this.state.cOptions.length) this.getCollections();
-    // let results = this.state.results;
 
     return (
       <div className='dashboard'>
@@ -99,7 +97,7 @@ class Search extends Component {
         <div className="wrapper grey darken-2">
           <form onSubmit={this.handleSubmit}>
 
-            <div className="row">
+            <div className="row lmargin">
               <div className="input-field col s6 m3">
                 <select className="browser-default" id="collection_start" onChange={this.handleChange} >
                   <option value="" disabled selected>Choose Start YEAR to query</option>
@@ -121,13 +119,12 @@ class Search extends Component {
               </div>
             </div>
 
-            <div className="row">
+            <div className="row lmargin">
               <div className="input-field col s6 m3">
                 <select className="browser-default" id="key" onChange={this.handleChange} >
                   <option value="" disabled selected>Choose FIELD to query</option>
                   <option value="lastname">Lastname</option>
                   <option value="firstname">Firstname</option>
-                  {/* <option value="street">Street</option> */}
                 </select>
                 {this.state.keyError ? (
                   <div style={{ fontSize: 12, color: "red" }}>{this.state.keyError}</div>
@@ -144,16 +141,15 @@ class Search extends Component {
               </div>
             </div>
 
-            <div className="row">
+            <div className="row lmargin">
               {this.state.queryMsg ? (
-                <div>{this.state.queryMsg}</div>
+                <div className="white-text query_msg">{this.state.queryMsg}</div>
               ) : null}
             </div>
           </form>
-        </div>
-
-        <div className="row querytable">
-          <ResultTable results = {this.state.results} update_results = {this.update_results} />
+          <div className="row lmargin">
+            <ResultTable results = {this.state.results} update_results = {this.update_results} />
+          </div>
         </div>
 
       </div>

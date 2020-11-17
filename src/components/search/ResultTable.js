@@ -4,7 +4,6 @@ import React, { Component } from 'react';
 class ResultTable extends Component {
 
   addTableRow = (result) => {
-  
     return (
       <tr>
         <td>{result.lastname}</td>
@@ -70,8 +69,12 @@ class ResultTable extends Component {
   render() {
     
     return(
-      <div className="card material-table">
-        {this.createTable(this.props.results)}
+      <div>
+        {this.props.results.length ? (
+          <div className="card">
+          {this.createTable(this.props.results)}
+        </div>
+        ): null }
       </div>
     )
   }

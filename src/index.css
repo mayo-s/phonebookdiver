@@ -19,8 +19,9 @@ code {
     margin: 0 auto;
 }
 
-.querytable {
-    margin-left: 5%;
-    margin-right: 5%;
+.lmargin {
+    margin-left: 40px;
+    margin-right: 40px;
+    margin-top: auto;
+    margin-bottom: auto;
 }
-
