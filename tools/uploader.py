@@ -34,14 +34,10 @@ def get_data_from_file(dir):
 
     phonebook_data = []
     with open(phonebookDir + dirname + file, 'r', encoding=enc) as data:
-      phonebook = json.load(data)
-      # line = data.readline()
-      # while line:
-      #   if len(line) > 1:
-      #     phonebook_data.append(json.loads(line))
-      #   line = data.readline()
+      return json.load(data)
 
-  return phonebook
+
+    return None
 
 def send_to_db(collection, phonebook):
   info = f'Inserting into Database {collection}'
@@ -71,8 +67,9 @@ def uploader():
     dirname = dir['name']
     if dirname[:7] not in collection_overview:
       data = get_data_from_file(dir)
-      collection_name = dirname[:7]
-      send_to_db(collection_name, data)
-      data.clear()
+      if data is not None:
+        collection_name = dirname[:7]
+        send_to_db(collection_name, data)
+        data.clear()
   print('UPLOADER Done')
   log('INFO', ' UPLOADER Done')
