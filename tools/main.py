@@ -3,8 +3,8 @@ from reader import reader
 from uploader import uploader
 
 def start():
-    encoder()
-    reader()
+    # encoder()
+    # reader()
     uploader()
 
 start()

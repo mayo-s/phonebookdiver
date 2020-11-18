@@ -6,6 +6,7 @@ from helper import get_main_dir, get_directories, get_files_in_dir, get_encoding
 #
 
 special_chars = {
+  # records until 2003
   'ΓöÇ': 'Ä',
   '╬ú': 'ä',
   'Γòô': 'Ö',
@@ -13,6 +14,14 @@ special_chars = {
   'Γûä': 'Ü',
   'Γü┐': 'ü',
   'ΓûÇ': 'ß',
+  # records after 2003
+  'Ã': 'Ä',
+  'Ã¤': 'ä',
+  'Ã': 'Ö',
+  'Ã¶': 'ö',
+  'Ã': 'Ü',
+  'Ã¼': 'ü',
+  'Ã': 'ß',
 }
 
 def get_files():
