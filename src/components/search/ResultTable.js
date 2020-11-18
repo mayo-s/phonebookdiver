@@ -5,7 +5,7 @@ class ResultTable extends Component {
 
   addTableRow = (result) => {
     return (
-      <tr>
+      <tr key={result._id}>
         <td>{result.lastname}</td>
         <td>{result.firstname}</td>
         <td>{result.city}</td>
