@@ -96,15 +96,23 @@ def geocoding_bulk(addresses):
   print(f'... {cnt_no_coords} with missing lat/lng')
   return coords
 
-def search_colls(start, end, key, value):
+def search_colls(start, end, key, value, seckey, secvalue):
   collections = get_all_collections()
   results = []
-  print(f'Querying the years from {start[:4]} to {end[:4]} for {key} = {value}')
+  query_msg = f'Querying the years from {start[:4]} to {end[:4]} for {key} = {value}'
+  if seckey is not None and seckey != '' and secvalue is not None and secvalue != '':
+    query_msg += f' and {seckey} = {secvalue}'
+  print(query_msg)
   for c in collections:
     if c[:4] > end[:4]: continue
     if c[:4] < start[:4]: continue
 
-    response = get_collection(c).find({key: value}, {'firstname': 1, 'lastname': 1, 'zip': 1, 'city': 1, 'street': 1, 'street_number': 1, 'area_code': 1, 'phonenumber': 1})
+    if seckey is not None and seckey != '' and secvalue is not None and secvalue != '':
+      response = get_collection(c).find({key: value, seckey: secvalue}, {'firstname': 1, 'lastname': 1, 'zip': 1, 'city': 1, 'street': 1, 'street_number': 1, 'area_code': 1, 'phonenumber': 1})
+    else:
+      response = get_collection(c).find({key: value}, {'firstname': 1, 'lastname': 1, 'zip': 1, 'city': 1, 'street': 1, 'street_number': 1, 'area_code': 1, 'phonenumber': 1})
+    
+    
     if response.count() <= 0: continue
     # print(f'Found {response.count()} results in {c}')
     

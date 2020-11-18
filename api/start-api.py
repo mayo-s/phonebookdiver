@@ -43,8 +43,11 @@ def search():
   value = request.args.get('value')
   if value is None:
     return 'NO VALUE'
+  seckey = request.args.get('seckey')
+  secvalue = request.args.get('secvalue')
+  
 
-  return jsonify(search_colls(start, end, key, value))
+  return jsonify(search_colls(start, end, key, value, seckey, secvalue))
 
 
 
