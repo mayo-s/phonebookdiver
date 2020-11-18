@@ -56,8 +56,7 @@ class Search extends Component {
   }
 
   update_resultView = (data) => {
-    console.log(data);
-    let queryMsg = this.state.queryMsg + ' Found ' + data.length + ' entrie(s).';
+    let queryMsg = this.state.queryMsg + ' Found ' + data.length + ' entries.';
     this.setState({ queryMsg, results: data });
   }
 
@@ -79,7 +78,7 @@ class Search extends Component {
         let first = '9999_Q0';
         let last = '0000_Q0';
         for (let d in data) {
-          options.push(<option value={d} >{d}</option>);
+          options.push(<option value={d} key={d}>{d}</option>);
           if (parseInt(first.substr(0, 4)) > parseInt(d.substr(0, 4))) first = d;
           if (parseInt(last.substr(0, 4)) < parseInt(d.substr(0, 4))) last = d;
         }
@@ -100,7 +99,7 @@ class Search extends Component {
             <div className="row lmargin">
               <div className="input-field col s6 m3">
                 <select className="browser-default" id="collection_start" onChange={this.handleChange} >
-                  <option value="" disabled selected>Choose Start YEAR to query</option>
+                  <option value="" disabled selected key="start_year">Choose Start YEAR to query</option>
                   {this.state.cOptions}
                 </select>
                 {this.state.startError ? (
@@ -110,7 +109,7 @@ class Search extends Component {
 
               <div className="input-field col s6 m3">
                 <select className="browser-default" id="collection_end" onChange={this.handleChange} >
-                  <option value="" disabled selected>Choose End YEAR to query</option>
+                  <option value="" disabled selected key="end_year">Choose End YEAR to query</option>
                   {this.state.cOptions}
                 </select>
               </div>
