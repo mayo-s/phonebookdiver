@@ -134,6 +134,7 @@ def search_colls(start, end, key, value):
         new_result = r
         new_result['appearance'] = []
         new_result['appearance'].append(c)
+        new_result['_id'] = c + str(r.get('_id'))
         results.append(new_result)
   print(f'Found {len(results)} total results')
   return results
