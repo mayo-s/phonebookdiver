@@ -5,7 +5,7 @@ from db_indexer import create_indexes
 
 def start():
     # encoder()
-    reader()
+    # reader()
     uploader()
     create_indexes()
 

@@ -70,6 +70,8 @@ def files_to_array(dir):
       log('WARNING', msg)
       continue
 
+
+    # TODO change hard coded encoding 
     with open(phonebookDir + dirname + file, 'r', encoding='iso-8859-1') as data:
       for i, line in enumerate(data):
         if i + 1 >= len(phonebook):
