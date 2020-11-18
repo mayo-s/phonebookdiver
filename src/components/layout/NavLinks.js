@@ -6,6 +6,7 @@ const NavLinks = (props) => {
     <ul className="right">
       <li><NavLink to='/'>Home</NavLink></li>
       <li><NavLink to='/heatmap'>Heatmap</NavLink></li>
+      <li><NavLink to='/search'>Search</NavLink></li>
       <li><NavLink to='/'>Imprint</NavLink></li>
     </ul>
   )

@@ -3,6 +3,7 @@ import { BrowserRouter, Switch, Route } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import Dashboard from './components/dashboard/Dashboard';
 import Map from './components/heatmap/Map';
+import Search from './components/search/Search';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Switch>
           <Route exact path='/' component={Dashboard} />
           <Route path='/heatmap' component={Map} />
+          <Route path='/search' component={Search} />
           {/* <Route path='/imprint' component={Imprint} /> */}
         </Switch>
       </div>

@@ -10,7 +10,18 @@ code {
 }
 
 .leaflet-container {
-    height: 90vh;
+    height: 82vh;
     width: 100%;
     margin: 0 auto;
+}
+
+.filterbar {
+    margin: 0 auto;
+}
+
+.lmargin {
+    margin-left: 40px;
+    margin-right: 40px;
+    margin-top: auto;
+    margin-bottom: auto;
 }

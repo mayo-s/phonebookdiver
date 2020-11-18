@@ -3,6 +3,7 @@ from pymongo import MongoClient
 import requests
 from geopy.extra.rate_limiter import RateLimiter
 from geopy.geocoders import Nominatim
+from operator import itemgetter
 
 geolocator = Nominatim(user_agent="phonebookdiver")
 
@@ -94,4 +95,58 @@ def geocoding_bulk(addresses):
 
   print(f'... {cnt_no_coords} with missing lat/lng')
   return coords
-  
+
+def search_colls(start, end, key, value, seckey, secvalue):
+  collections = get_all_collections()
+  results = []
+  query_msg = f'Querying the years from {start[:4]} to {end[:4]} for {key} = {value}'
+  if seckey is not None and seckey != '' and secvalue is not None and secvalue != '':
+    query_msg += f' and {seckey} = {secvalue}'
+  print(query_msg)
+  for c in collections:
+    if c[:4] > end[:4]: continue
+    if c[:4] < start[:4]: continue
+
+    if seckey is not None and seckey != '' and secvalue is not None and secvalue != '':
+      response = get_collection(c).find({key: value, seckey: secvalue}, {'firstname': 1, 'lastname': 1, 'zip': 1, 'city': 1, 'street': 1, 'street_number': 1, 'area_code': 1, 'phonenumber': 1})
+    else:
+      response = get_collection(c).find({key: value}, {'firstname': 1, 'lastname': 1, 'zip': 1, 'city': 1, 'street': 1, 'street_number': 1, 'area_code': 1, 'phonenumber': 1})
+    
+    
+    if response.count() <= 0: continue
+    # print(f'Found {response.count()} results in {c}')
+    
+    for r in response:
+      found = False
+      ln = r.get('lastname')
+      fn = r.get('firstname')
+      zip = r.get('zip')
+      city = r.get('city')
+      st = r.get('street')
+      stn = r.get('street_number')
+
+      # TODO: how to cope with same name at same address i.e. Michael Müller
+      for res in results:
+        if key == 'lastname':
+          if fn == res.get('firstname') and zip == res.get('zip') and city == res.get('city'):
+            res['appearance'] = add_item_and_sort(res['appearance'], c)
+            found = True
+            break
+        if key == 'firstname':
+          if ln == res.get('lastname') and zip == res.get('zip') and city == res.get('city'):
+            res['appearance'] = add_item_and_sort(res['appearance'], c)
+            found = True
+            break
+
+      if not found:
+        new_result = r
+        new_result['appearance'] = []
+        new_result['appearance'].append(c)
+        new_result['_id'] = c + str(r.get('_id'))
+        results.append(new_result)
+  print(f'Found {len(results)} total results')
+  return results
+
+def add_item_and_sort(list, item):
+  list.append(item)
+  return sorted(list)

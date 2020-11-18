@@ -37,9 +37,9 @@ fields = {
   # '15_Webadresse': 'webaddress',
   # '14_15_Email_Webadresse': 'email_web',
   '16_Koordinaten': 'coordinates',
-  '90_Geokoordinaten_hnr': 'geocoords_stnr',
-  '91_Geokoordinaten_str': 'geocoords_str',
-  '99_Strassenname': 'street_name'
+  # '90_Geokoordinaten_hnr': 'geocoords_stnr',
+  # '91_Geokoordinaten_str': 'geocoords_str',
+  # '99_Strassenname': 'street_name'
 }
 
 def files_to_array(dir):
@@ -62,6 +62,7 @@ def files_to_array(dir):
     log('INFO', info)
 
     # ignore utf-8-String in filename
+    # TODO use cleaner way by explicitly ignoring
     # field_name = fields.get(file[:-6], '')
     field_name = fields.get(file, '')
     if field_name is '':
@@ -69,6 +70,8 @@ def files_to_array(dir):
       log('WARNING', msg)
       continue
 
+
+    # TODO change hard coded encoding 
     with open(phonebookDir + dirname + file, 'r', encoding='iso-8859-1') as data:
       for i, line in enumerate(data):
         if i + 1 >= len(phonebook):
