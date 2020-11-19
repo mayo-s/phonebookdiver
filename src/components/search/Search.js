@@ -187,7 +187,7 @@ class Search extends Component {
                 </div>
                 {this.state.sec_field ? (
                 <div>
-                  <a class="btn-floating btn-small center-align" onClick={this.add_sec_field}><i class="material-icons">remove</i></a>
+                  <a className="btn-floating btn-small center-align" onClick={this.add_sec_field}><i className="material-icons">remove</i></a>
                 </div>) : null}
               </div>
             ) : null}
