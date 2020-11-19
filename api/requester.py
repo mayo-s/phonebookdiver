@@ -29,7 +29,7 @@ def get_collection(name):
 def get_all_collections():
   return dict.fromkeys(db.list_collection_names(), 'name')
 
-
+# used for heatmap
 def find_entries(collection, key, value):
   print(f'Searching for {value} in {collection, key}')
   results = get_collection(collection).find(
@@ -96,6 +96,7 @@ def geocoding_bulk(addresses):
   print(f'... {cnt_no_coords} with missing lat/lng')
   return coords
 
+# used for table view
 def search_colls(start, end, key, value, seckey, secvalue):
   collections = get_all_collections()
   results = []

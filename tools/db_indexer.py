@@ -13,4 +13,4 @@ def create_indexes():
 
   print('Indexing DONE')
   
-create_indexes()
+# create_indexes()
