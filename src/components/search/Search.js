@@ -116,8 +116,8 @@ class Search extends Component {
 
             <div className="row lmargin">
               <div className="input-field col s6 m3">
-                <select className="browser-default" id="collection_start" onChange={this.handleChange} >
-                  <option value="" disabled selected key="start_year">Choose Start YEAR to query</option>
+                <select className="browser-default" id="collection_start" defaultValue={""} onChange={this.handleChange} >
+                  <option value="" disabled key="start_year">Choose Start YEAR to query</option>
                   {this.state.cOptions}
                 </select>
                 {this.state.startError ? (
@@ -126,8 +126,8 @@ class Search extends Component {
               </div>
 
               <div className="input-field col s6 m3">
-                <select className="browser-default" id="collection_end" onChange={this.handleChange} >
-                  <option value="" disabled selected key="end_year">Choose End YEAR to query</option>
+                <select className="browser-default" id="collection_end" defaultValue={""} onChange={this.handleChange} >
+                  <option value="" disabled key="end_year">Choose End YEAR to query</option>
                   {this.state.cOptions}
                 </select>
               </div>
@@ -138,8 +138,8 @@ class Search extends Component {
 
             <div className="row lmargin">
               <div className="input-field col s6 m3">
-                <select className="browser-default" id="pri_key" onChange={this.handleChange} >
-                  <option value="" disabled selected>Choose FIELD to query</option>
+                <select className="browser-default" id="pri_key" defaultValue={""} onChange={this.handleChange} >
+                  <option value="" disabled>Choose FIELD to query</option>
                   <option value="lastname">Lastname</option>
                   <option value="firstname">Firstname</option>
                 </select>
@@ -158,15 +158,15 @@ class Search extends Component {
               </div>
               {!this.state.sec_field ? (
               <div>
-                <a class="btn-floating btn-small center-align" onClick={this.add_sec_field}><i class="material-icons">add</i></a>
+                <a className="btn-floating btn-small center-align" onClick={this.add_sec_field}><i className="material-icons">add</i></a>
               </div>) : null}
             </div>
 
             {this.state.sec_field ? (
               <div className="row lmargin">
                 <div className="input-field col s6 m3">
-                  <select className="browser-default" id="sec_key" onChange={this.handleChange} >
-                    <option value="" disabled selected>Choose second FIELD to query</option>
+                  <select className="browser-default" id="sec_key" defaultValue={""} onChange={this.handleChange} >
+                    <option value="" disabled>Choose second FIELD to query</option>
                     {this.state.pri_key === 'lastname' ? (<option value="firstname">Firstname</option>) : (<option value="lastname">Lastname</option>)}
                     <option value="zip">ZIP</option>
                     <option value="city">City</option>
