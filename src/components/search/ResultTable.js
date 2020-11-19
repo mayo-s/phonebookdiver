@@ -55,12 +55,33 @@ class ResultTable extends Component {
     )
   }
 
+  mergeSortByField = (list, field) => {
+
+    if (list.length < 2) {
+      return list
+    }
+
+    const left = list.splice(0, list.length / 2);
+    return this.merge(this.mergeSortByField(left, field), this.mergeSortByField(list, field), field)
+  }
+
+  merge = (left, right, field) => {
+
+    let list = [];
+
+    while (left.length && right.length) {
+      if (left[0][field] < right[0][field]) {
+        list.push(left.shift());
+      } else {
+        list.push(right.shift());
+      }
+    }
+    return [...list, ...left, ...right];
+  }
+
   // TODO - REFACTOR sorting algorithm
   sortByField = (field) => {
-    let sorted_results = this.props.results;
-    sorted_results = this.props.results.sort((r1, r2) => (r1[field] > r2[field] ? 1 : -1));
-
-    this.props.update_results(sorted_results);
+    this.props.update_results(this.mergeSortByField(this.props.results, field));
   }
 
   render() {
