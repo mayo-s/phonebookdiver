@@ -167,6 +167,7 @@ class Search extends Component {
                 <div className="input-field col s6 m3">
                   <select className="browser-default" id="sec_key" onChange={this.handleChange} >
                     <option value="" disabled selected>Choose second FIELD to query</option>
+                    {this.state.pri_key === 'lastname' ? (<option value="firstname">Firstname</option>) : (<option value="lastname">Lastname</option>)}
                     <option value="zip">ZIP</option>
                     <option value="city">City</option>
                     <option value="area_code">Area Code</option>
