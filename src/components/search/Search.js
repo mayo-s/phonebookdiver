@@ -19,6 +19,7 @@ class Search extends Component {
     secKeyError: '',
     secStrError: '',
 
+    loading: false,
     queryMsg: '',
     results: [],
   }
@@ -28,10 +29,12 @@ class Search extends Component {
     const isValid = this.validateForm();
 
     if (isValid) {
+      
       let queryMsg = 'Querying the years from ' + this.state.collection_start.substr(0, 4) + ' to ' + this.state.collection_end.substr(0, 4) + ' for ' + this.state.pri_key + ' = ' + this.state.pri_search_str;
       if(this.state.sec_field && this.state.secKeyError && this.state.secStrError) queryMsg += ' and ' + this.state.sec_key + ' = ' + this.state.sec_search_str + '.';
       else queryMsg += '.';
-      this.setState({ queryMsg })
+      this.setState({ queryMsg, loading: true })
+
       let url = 'http://localhost:5000/search?start=' + this.state.collection_start + '&end=' + this.state.collection_end + '&key=' + this.state.pri_key + '&value=' + this.state.pri_search_str;
       if(this.state.sec_field) url += '&seckey=' + this.state.sec_key + '&secvalue=' + this.state.sec_search_str;
       console.log(url);
@@ -75,7 +78,7 @@ class Search extends Component {
 
   update_resultView = (data) => {
     let queryMsg = this.state.queryMsg + ' Found ' + data.length + ' entries.';
-    this.setState({ queryMsg, results: data });
+    this.setState({ queryMsg, results: data, loading: false });
   }
 
   update_results = (results) => {
@@ -205,7 +208,11 @@ class Search extends Component {
 
             <div className="row lmargin">
               {this.state.queryMsg ? (
-                <div className="white-text query_msg">{this.state.queryMsg}</div>
+                <div className="white-text query_msg">{this.state.queryMsg}{this.state.loading ? (
+                  <div class="progress">
+                    <div class="indeterminate"></div>
+                  </div>
+                ) : null}</div>
               ) : null}
             </div>
           </form>
