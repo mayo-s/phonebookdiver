@@ -66,6 +66,10 @@ def check_substring(line):
 
   return line
 
+def remove_char(elem, char):
+  while char in elem:
+    elem = elem.replace(char, '')
+  return elem
 
 # START
 def start():
@@ -76,5 +80,3 @@ def start():
     clean_spec_chars(dir)
 
   log('INFO', 'DATA CLEANER Done')
-
-# start()
