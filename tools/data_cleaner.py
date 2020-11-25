@@ -75,7 +75,7 @@ def remove_char(elem, char):
 
 def clean_city():
   key_name = 'city'
-  collections = get_all_collections
+  collections = get_all_collections()
 
   for coll in collections: 
     info = f'{coll} Cleaning city names'
