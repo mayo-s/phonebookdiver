@@ -55,10 +55,10 @@ def insert_entries(entries, collection):
   else:
     return 'SUCCESS'
 
-def upsert_entry(id, entry, collection):
+def update_doc(collection, id, key, value):
   c = get_collection(collection)
   try:
-    c.update(id, entry, upsert=True)
+    c.update_one({'_id': id}, {'$set': {key: value}})
   except pymongo.errors.DocumentTooLarge as err:
     log('WARNING', str(err))
     return 'FAILED'
@@ -78,3 +78,6 @@ def get_overview():
 
 def create_coll_index(collection, field):
   db.get_collection(collection).create_index(field)
+
+def find_entries(collection, key, value):
+  return db.get_collection(collection).find({key: {'$regex': value}})
