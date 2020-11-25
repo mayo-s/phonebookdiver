@@ -1,4 +1,6 @@
 from helper import get_main_dir, get_directories, get_files_in_dir, get_encoding, log
+from mongodb_helper import get_all_collections, find_entries, update_doc
+import json
 
 # author: Mario Schuetz
 #
@@ -70,6 +72,22 @@ def remove_char(elem, char):
   while char in elem:
     elem = elem.replace(char, '')
   return elem
+
+def clean_city():
+  key_name = 'city'
+  collections = get_all_collections
+
+  for coll in collections: 
+    info = f'{coll} Cleaning city names'
+    log('INFO', info)
+    print(info)    
+  # db.getCollection('1997_Q1').find({'city': {$regex: '.*\\*.*'}})
+    for e in find_entries(coll, key_name, '.*\\*.*'):
+      e[key_name] = remove_char(e.get(key_name), '*').strip()
+      
+      update_doc(coll, e['_id'], key_name, e.get(key_name))
+  print('DONE')
+  return 'DONE'
 
 # START
 def start():
