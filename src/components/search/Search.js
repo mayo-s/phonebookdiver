@@ -23,6 +23,12 @@ class Search extends Component {
     queryMsg: '',
     results: [],
   }
+  
+    handleChange = (e) => {
+      this.setState({
+        [e.target.id]: e.target.value
+      });
+    }
 
   handleSubmit = (e) => {
     e.preventDefault();
@@ -83,12 +89,6 @@ class Search extends Component {
 
   update_results = (results) => {
     this.setState({results})
-  }
-
-  handleChange = (e) => {
-    this.setState({
-      [e.target.id]: e.target.value
-    });
   }
 
   add_sec_field = () => {
@@ -209,8 +209,8 @@ class Search extends Component {
             <div className="row lmargin">
               {this.state.queryMsg ? (
                 <div className="white-text query_msg">{this.state.queryMsg}{this.state.loading ? (
-                  <div class="progress">
-                    <div class="indeterminate"></div>
+                  <div className="progress">
+                    <div className="indeterminate"></div>
                   </div>
                 ) : null}</div>
               ) : null}
