@@ -1,3 +1,4 @@
+from collections import defaultdict
 import pymongo
 from pymongo import MongoClient
 import requests
@@ -109,45 +110,81 @@ def search_colls(start, end, key, value, seckey, secvalue):
     if c[:4] < start[:4]: continue
 
     if seckey is not None and seckey != '' and secvalue is not None and secvalue != '':
-      response = get_collection(c).find({key: value, seckey: secvalue}, {'firstname': 1, 'lastname': 1, 'zip': 1, 'city': 1, 'street': 1, 'street_number': 1, 'area_code': 1, 'phonenumber': 1})
+      response = get_collection(c).find({key: value, seckey: secvalue})
     else:
-      response = get_collection(c).find({key: value}, {'firstname': 1, 'lastname': 1, 'zip': 1, 'city': 1, 'street': 1, 'street_number': 1, 'area_code': 1, 'phonenumber': 1})
+      response = get_collection(c).find({key: value})
     
     
     if response.count() <= 0: continue
     # print(f'Found {response.count()} results in {c}')
     
-    for r in response:
+    for resp in response:
       found = False
-      ln = r.get('lastname')
-      fn = r.get('firstname')
-      zip = r.get('zip')
-      city = r.get('city')
-      st = r.get('street')
-      stn = r.get('street_number')
+      ln = resp.get('lastname')
+      if ln is None: ln = ''
+      fn = resp.get('firstname')
+      if fn is None: fn = ''
+      zip = resp.get('zip')
+      if zip is None: zip = ''
+      city = resp.get('city')
+      if city is None: city = ''
+      st = resp.get('street')
+      if st is None: st = ''
+      stn = resp.get('street_number')
+      if stn is None: stn = ''
+      ac = resp.get('area_code')
+      if ac is None: ac = ''
 
       # TODO: how to cope with same name at same address i.e. Michael Müller
       for res in results:
-        if key == 'lastname':
-          if fn == res.get('firstname') and zip == res.get('zip') and city == res.get('city'):
-            res['appearance'] = add_item_and_sort(res['appearance'], c)
-            found = True
-            break
-        if key == 'firstname':
-          if ln == res.get('lastname') and zip == res.get('zip') and city == res.get('city'):
-            res['appearance'] = add_item_and_sort(res['appearance'], c)
+        res_ln = res.get('lastname')
+        if res_ln is None: res_ln = ''
+        res_fn = res.get('firstname')
+        if res_fn is None: res_fn = ''
+        res_zip = res.get('zip')
+        if res_zip is None: res_zip = ''
+        res_city = res.get('city')
+        if res_city is None: res_city = ''
+        res_st = res.get('street')
+        if res_st is None: res_st = ''
+        res_stn = res.get('street_number')
+        if res_stn is None: res_stn = ''
+        res_ac = res.get('area_code')
+        if res_ac is None: res_ac = ''
+
+        if ln == res_ln and fn == res_fn and zip == res_zip and city == res_city and st == res_st and stn.upper() == res_stn.upper() and ac == res_ac:
+          res['appearance'] = add_coll_and_sort(res['appearance'], c)
+          temp_res = merge_dict_results(res, resp)
+          if temp_res is None: break
+          else:
+            res = temp_res
             found = True
             break
 
       if not found:
-        new_result = r
+        new_result = resp
         new_result['appearance'] = []
         new_result['appearance'].append(c)
-        new_result['_id'] = c + str(r.get('_id'))
+        new_result['_id'] = c + str(resp.get('_id'))
         results.append(new_result)
+
   print(f'Found {len(results)} total results')
   return results
 
-def add_item_and_sort(list, item):
+def add_coll_and_sort(list, item):
   list.append(item)
   return sorted(list)
+
+def merge_dict_results(dict1, dict2):
+  ignore_list = ['_id', 'street_index', 'street_index_hnr', 'coordinates']
+
+  for elem2 in dict2:
+    if elem2 in ignore_list: continue
+    if elem2 not in dict1:
+      dict1[elem2] = dict2.get(elem2)
+    elif dict1[elem2].lower() == dict2.get(elem2).lower():
+      continue
+    else: 
+      return None
+
+  return dict1
