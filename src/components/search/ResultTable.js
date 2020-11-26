@@ -3,17 +3,18 @@ import React, { Component } from 'react';
 
 class ResultTable extends Component {
 
+  state = {
+    header: ['lastname', 'firstname', 'city', 'zip', 'street', 'area_code', 'phonenumber', 'appearance']
+  }
+
   addTableRow = (result) => {
     return (
       <tr key={result._id}>
-        <td>{result.lastname}</td>
-        <td>{result.firstname}</td>
-        <td>{result.city}</td>
-        <td>{result.zip}</td>
-        <td>{result.street} {result.street_number}</td>
-        <td>{result.area_code}</td>
-        <td>{result.phonenumber}</td>
-        <td>{this.beautify_appearance_data(result.appearance)}</td>
+        {this.state.header.map((h) => {
+          if(h === 'appearance') return (<td>{this.beautify_appearance_data(result.appearance)}</td>)
+          if(h === 'street') return (<td>{result.street} {result.street_number}</td>)
+          return (<td>{result[h]}</td>)
+        })}
       </tr>)
   }
 
@@ -31,19 +32,13 @@ class ResultTable extends Component {
   }
 
   createTable = (results) => {
-
     return (
       <table className="striped highlight ">
         <thead>
           <tr>
-            <th onClick={() => this.sortByField('lastname')}>Lastname</th>
-            <th onClick={() => this.sortByField('firstname')}>Firstname</th>
-            <th onClick={() => this.sortByField('city')}>City</th>
-            <th onClick={() => this.sortByField('zip')}>ZIP</th>
-            <th>Street</th>
-            <th onClick={() => this.sortByField('area_code')}>Area Code</th>
-            <th>Phone Number</th>
-            <th>Appearance</th>
+            {this.state.header.map((h) => {
+              return (<th onClick={() => this.sortByField(h)}>{this.makeHeaderStr(h)}</th>)
+            })}
           </tr>
         </thead>
         <tbody>
@@ -55,8 +50,12 @@ class ResultTable extends Component {
     )
   }
 
-  mergeSortByField = (list, field) => {
+  makeHeaderStr = (word) => {
+    if(typeof word !== 'string') return word
+    return (word.charAt(0).toUpperCase() + word.slice(1)).replace('_', ' ')
+  }
 
+  mergeSortByField = (list, field) => {
     if (list.length < 2) {
       return list
     }
@@ -85,7 +84,6 @@ class ResultTable extends Component {
   }
 
   render() {
-
     return (
       <div>
         {this.props.results.length ? (
