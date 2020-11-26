@@ -37,7 +37,7 @@ class ResultTable extends Component {
 
     let header = this.fetchTableHeader(results);
     return (
-      <table className="striped highlight ">
+      <table className="striped">
         <thead>
           <tr>
             {header.map((h) => {
@@ -66,9 +66,9 @@ class ResultTable extends Component {
     return header
   }
 
-  makeHeaderStr = (word) => {
-    if(typeof word !== 'string') return word
-    return (word.charAt(0).toUpperCase() + word.slice(1)).replace('_', ' ')
+  makeHeaderStr = (header_str) => {
+    if(typeof header_str !== 'string') return header_str
+    return (header_str.charAt(0).toUpperCase() + header_str.slice(1)).replace('_', ' ')
   }
 
   mergeSortByField = (list, field) => {

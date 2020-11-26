@@ -4,12 +4,15 @@ import NavLinks from './NavLinks';
 
 const Navbar = () => {
   return (
-    <nav className="nav-wrapper grey darken-3">
-      <div className="container">
-        <Link to='/' className="brand-logo">The Phonebook Diver</Link>
-        <NavLinks />
-      </div>
-    </nav>
+    <div className="navbar-fixed">
+      <nav className="nav-wrapper grey darken-3">
+        <div className="container">
+          <Link to='/' className="brand-logo">The Phonebook Diver</Link>
+          <NavLinks />
+        </div>
+      </nav>
+
+    </div>
   )
 }
 
