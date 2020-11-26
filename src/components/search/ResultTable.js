@@ -4,13 +4,15 @@ import React, { Component } from 'react';
 class ResultTable extends Component {
 
   state = {
-    header: ['lastname', 'firstname', 'city', 'zip', 'street', 'area_code', 'phonenumber', 'appearance']
+    header: ['lastname', 'firstname', 'city', 'zip', 'street', 'area_code', 'phonenumber', 'appearance'],
+    ignore_header: ['_id', 'flags', 'street_number', 'street_index_hnr', 'street_index'],
   }
 
-  addTableRow = (result) => {
+  addTableRow = (header, result) => {
     return (
       <tr key={result._id}>
-        {this.state.header.map((h) => {
+        {header.map((h) => {
+          if(this.state.ignore_header.includes(h)) return null
           if(h === 'appearance') return (<td>{this.beautify_appearance_data(result.appearance)}</td>)
           if(h === 'street') return (<td>{result.street} {result.street_number}</td>)
           return (<td>{result[h]}</td>)
@@ -32,22 +34,37 @@ class ResultTable extends Component {
   }
 
   createTable = (results) => {
+
+    let header = this.fetchTableHeader(results);
     return (
       <table className="striped highlight ">
         <thead>
           <tr>
-            {this.state.header.map((h) => {
+            {header.map((h) => {
               return (<th onClick={() => this.sortByField(h)}>{this.makeHeaderStr(h)}</th>)
             })}
           </tr>
         </thead>
         <tbody>
           {results.map((result, index) => {
-            return this.addTableRow(result)
+            return this.addTableRow(header, result)
           })}
         </tbody>
       </table>
     )
+  }
+
+  fetchTableHeader = (results) => {
+    let header = [...this.state.header];
+    results.forEach((result) => {
+      Object.keys(result).forEach((r) => {
+        if(!this.state.ignore_header.includes(r) && !header.includes(r)) {
+          header.push(r);
+        }
+      });
+    });
+    console.log('HEADER' + header);
+    return header
   }
 
   makeHeaderStr = (word) => {
