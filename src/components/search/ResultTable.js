@@ -63,7 +63,6 @@ class ResultTable extends Component {
         }
       });
     });
-    console.log('HEADER' + header);
     return header
   }
 
