@@ -13,28 +13,27 @@ class ResultTable extends Component {
       <tr key={result._id}>
         {header.map((h) => {
           if(this.state.ignore_header.includes(h)) return null
-          if(h === 'appearance') return (<td>{this.beautify_appearance_data(result.appearance)}</td>)
+
+          if(h === 'appearance') return (<td>
+            {result.appearance.map((a) => {
+              return (<a onClick={() => this.fetch_details(a)}>{a.substr(0,7)} </a>)
+            })}
+          </td>)
+
           if(h === 'street') return (<td>{result.street} {result.street_number}</td>)
           return (<td>{result[h]}</td>)
         })}
       </tr>)
   }
 
-  beautify_appearance_data = (list) => {
-    let data = '';
-    let first = true;
-    for (let i in list) {
-      if (!first) data += ', ' + list[i];
-      else {
-        data += list[i];
-        first = false;
-      }
-    }
-    return data
+  fetch_details = (resp_id) => {
+    let url = 'http://localhost:3000/fetch_details?id=' + resp_id;
+    fetch(url)
+        .then(response => response.json())
+        .then(data => this.props.details_overlay(resp_id, data));
   }
 
   createTable = (results) => {
-
     let header = this.fetchTableHeader(results);
     return (
       <table className="striped">

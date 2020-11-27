@@ -22,13 +22,15 @@ class Search extends Component {
     loading: false,
     queryMsg: '',
     results: [],
+
+    overlay: '',
   }
   
-    handleChange = (e) => {
-      this.setState({
-        [e.target.id]: e.target.value
-      });
-    }
+  handleChange = (e) => {
+    this.setState({
+      [e.target.id]: e.target.value
+    });
+  }
 
   handleSubmit = (e) => {
     e.preventDefault();
@@ -119,11 +121,37 @@ class Search extends Component {
       })
   }
 
+  details_overlay = (id, data) => {
+    data['c_id'] = id;
+    let info = this.parse_details(data);
+
+    let overlay = (      
+      <div className="overlay_blur" onClick={() => this.setState({overlay: ''})}>
+        <div className="card overlay_content">
+          <h5>Record Details {data['c_id'].substr(0,7)}</h5>
+          {info.map((i) => {
+            return (<p><b>{i}:</b> {data[i]}</p>)
+          })}
+        </div>
+      </div>)
+    this.setState({overlay});
+  }
+
+  parse_details = (data) => {
+    let info = [];
+    Object.keys(data).forEach((d) => {
+      info.push(d);
+    });
+    return info
+  }
+
   render() {
     if (!this.state.cOptions.length) this.getCollections();
 
     return (
       <div className='dashboard'>
+        {this.state.overlay ? (this.state.overlay) : null}
+
 
         <div className="wrapper grey darken-2">
           <form onSubmit={this.handleSubmit}>
@@ -217,7 +245,7 @@ class Search extends Component {
             </div>
           </form>
           <div className="row lmargin">
-            <ResultTable results = {this.state.results} update_results = {this.update_results} />
+            <ResultTable results = {this.state.results} update_results = {this.update_results} details_overlay = {this.details_overlay}/>
           </div>
         </div>
 
