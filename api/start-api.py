@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from requester import get_all_collections, find_entries, search_colls
+from requester import get_all_collections, find_entries, search_colls, fetch_details_by_id
 
 # author: Mario Schuetz
 #
@@ -46,10 +46,14 @@ def search():
   seckey = request.args.get('seckey')
   secvalue = request.args.get('secvalue')
   
-
   return jsonify(search_colls(start, end, key, value, seckey, secvalue))
 
+@app.route('/fetch_details')
+def fetch_details():
+  id = request.args.get('id')
+  if id is None: return 'INVALID id'
 
+  return jsonify(fetch_details_by_id(id))
 
 if __name__ == '__main__':
   app.run(debug=True)

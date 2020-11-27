@@ -1,10 +1,8 @@
-from collections import defaultdict
 import pymongo
 from pymongo import MongoClient
 import requests
 from geopy.extra.rate_limiter import RateLimiter
 from geopy.geocoders import Nominatim
-from operator import itemgetter
 
 geolocator = Nominatim(user_agent="phonebookdiver")
 
@@ -97,7 +95,7 @@ def geocoding_bulk(addresses):
   print(f'... {cnt_no_coords} with missing lat/lng')
   return coords
 
-# used for table view
+# query over multiple collections - used for table view
 def search_colls(start, end, key, value, seckey, secvalue):
   collections = get_all_collections()
   results = []
@@ -117,9 +115,10 @@ def search_colls(start, end, key, value, seckey, secvalue):
     
     if response.count() <= 0: continue
     # print(f'Found {response.count()} results in {c}')
-    
+
     for resp in response:
       found = False
+      resp_id = c + str(resp.get('_id'))
       ln = resp.get('lastname')
       if ln is None: ln = ''
       fn = resp.get('firstname')
@@ -153,7 +152,7 @@ def search_colls(start, end, key, value, seckey, secvalue):
         if res_ac is None: res_ac = ''
 
         if ln == res_ln and fn == res_fn and zip == res_zip and city == res_city and st == res_st and stn.upper() == res_stn.upper() and ac == res_ac:
-          res['appearance'] = add_coll_and_sort(res['appearance'], c)
+          res['appearance'] = add_coll_and_sort(res['appearance'], resp_id)
           temp_res = merge_dict_results(res, resp)
           if temp_res is None: break
           else:
@@ -164,8 +163,8 @@ def search_colls(start, end, key, value, seckey, secvalue):
       if not found:
         new_result = resp
         new_result['appearance'] = []
-        new_result['appearance'].append(c)
-        new_result['_id'] = c + str(resp.get('_id'))
+        new_result['_id'] = resp_id
+        new_result['appearance'].append(resp_id)
         results.append(new_result)
 
   print(f'Found {len(results)} total results')
@@ -188,3 +187,6 @@ def merge_dict_results(dict1, dict2):
       return None
 
   return dict1
+
+def fetch_details_by_id(_id):
+  return get_collection(_id[:7]).find_one({'_id': int(_id[7:])})
