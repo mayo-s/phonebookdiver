@@ -1,6 +1,7 @@
 flask
 flask-PyMongo
+-U flask_cors
 mongoengine
 python-dotenv
 requests
-
+geopy
