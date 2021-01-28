@@ -7,6 +7,9 @@ spec_chars
 *.cnf
 *.xml
 settings.json
+Dockerfile
+*.csv
+*.json
 
 # pip
 pip-selfcheck.json
