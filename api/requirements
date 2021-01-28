@@ -1,6 +1,6 @@
 flask
 flask-PyMongo
--U flask_cors
+flask_cors
 mongoengine
 python-dotenv
 requests
