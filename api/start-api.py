@@ -51,7 +51,7 @@ def search():
 @app.route('/fetch_details')
 def fetch_details():
   id = request.args.get('id')
-  if id is None: return 'INVALID id'
+  if id is None: return 'INVALID id (fetch details)'
 
   return jsonify(fetch_details_by_id(id))
 

@@ -11,7 +11,7 @@ geolocator = Nominatim(user_agent="phonebookdiver")
 # Process api requests
 #
 
-MONGO_URI = 'mongodb://mayo-nas:27017'
+MONGO_URI = 'mongodb://127.0.0.1:27017'
 
 try:
   client = MongoClient(MONGO_URI)
@@ -63,6 +63,7 @@ def sort_results_by_zip_and_city(results):
 
 def geocoding_single(address):
   print('GeoCoding...')
+  # Example https://nominatim.openstreetmap.org/search.php?countrycode=de&q={12555%20Berlin}&format=jsonv2
   query_str = f'https://nominatim.openstreetmap.org/search.php?countrycode=de&q={address.get("address")}&format=jsonv2'
   # print(f'\n{address}\n{query_str}\n')
   response = requests.get(query_str)
