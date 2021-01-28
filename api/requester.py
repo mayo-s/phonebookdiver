@@ -1,10 +1,6 @@
 import pymongo
 from pymongo import MongoClient
 import requests
-from geopy.extra.rate_limiter import RateLimiter
-from geopy.geocoders import Nominatim
-
-geolocator = Nominatim(user_agent="phonebookdiver")
 
 # author: Mario Schuetz
 #
@@ -37,12 +33,12 @@ def find_entries(collection, key, value):
   if results is None:
     return []
   results = sort_results_by_zip_and_city(results)
-  # geo_list = []
-  # for result in results:
-  #   geo_list.append(geocoding_single(result))
-  geo_list = geocoding_bulk(results)
-  return geo_list
-
+  print('Geocoding')
+  for r in results:
+    zip = r.get('zip')
+    city = r.get('city')
+    r['coordinates']  = get_coords(zip, city)
+  return results
 
 def sort_results_by_zip_and_city(results):
   print('Sorting...')
@@ -61,40 +57,20 @@ def sort_results_by_zip_and_city(results):
 
   return sorted_results
 
-def geocoding_single(address):
-  print('GeoCoding...')
-  # Example https://nominatim.openstreetmap.org/search.php?countrycode=de&q={12555%20Berlin}&format=jsonv2
-  query_str = f'https://nominatim.openstreetmap.org/search.php?countrycode=de&q={address.get("address")}&format=jsonv2'
-  # print(f'\n{address}\n{query_str}\n')
-  response = requests.get(query_str)
-  response = response.json()
+def get_coords(zip, city):
+  coords = db['zips_cities'].find_one({'zip': zip, 'city': city},  {'coordinates': 1})
+  if coords is not None: return coords.get('coordinates')
+  elif coords is  None:
+    print(f'Requesting OSM API - {zip} {city}')
+    # TODO when and where to update database?
+    query_str = f'https://nominatim.openstreetmap.org/search.php?countrycode=de&q={zip}%20{city}&format=jsonv2'
+    response = requests.get(query_str)
+    response = response.json()
 
-  # print test data / API use only
-  # if len(response) > 0:
-  #   address['lat'] = float(response[0].get('lat'))
-  #   address['lng'] = float(response[0].get('lon'))
-  #   return address
-
-  if len(response) > 0:
-    return [float(response[0].get('lat')), float(response[0].get('lon')), address.get('count')]
-  return []
-
-def geocoding_bulk(addresses):
-  print('GeoCoding...')
-  geolocator = Nominatim(user_agent='phonebookdiver')
-
-  geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1)
-  locations = [geocode(a.get('address')) for a in addresses]
-
-  coords = []
-  cnt_no_coords = 0
-  for l in locations:
-    try:
-      coords.append([l.latitude, l.longitude])
-    except AttributeError: cnt_no_coords +=1 
-
-  print(f'... {cnt_no_coords} with missing lat/lng')
-  return coords
+    if len(response) > 0:
+      # return f'{float(response[0].get('lat'))} {float(response[0].get('lon'))}'
+      return float(response[0].get('lat')), float(response[0].get('lon'))
+  return None
 
 # query over multiple collections - used for table view
 def search_colls(start, end, key, value, seckey, secvalue):
