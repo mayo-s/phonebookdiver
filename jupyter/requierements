@@ -1,5 +1,6 @@
 pymongo
 jupyter
+pip install jupyter_contrib_nbextensions
 requests
 numpy
 pandas
