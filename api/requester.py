@@ -1,5 +1,8 @@
 import pymongo
 from pymongo import MongoClient
+import datetime
+from datetime import datetime
+import logging
 import requests
 
 # author: Mario Schuetz
@@ -7,6 +10,7 @@ import requests
 # Process api requests
 #
 
+logging.basicConfig(filename='_phonebookdiver-OSM-requests.log', level=logging.DEBUG)
 MONGO_URI = 'mongodb://127.0.0.1:27017'
 
 try:
@@ -16,6 +20,17 @@ except pymongo.errors.ConnectionFailure as err:
   print(err)
 else:
   print(f'CONNECTED to {MONGO_URI} {db.name}')
+
+def log(type, msg):
+  date_time = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+  msg = ' ' + date_time + ' ' + msg
+  if type is 'WARNING':
+    logging.warning(msg)
+  if type is 'INFO':
+    logging.info(msg)
+  if type is 'LB':
+    logging.info('')
+
 
 def get_collection(name):
   return db[name]
@@ -33,12 +48,20 @@ def find_entries(collection, key, value):
   if results is None:
     return []
   results = sort_results_by_zip_and_city(results)
-  print('Geocoding')
+  print('Geocoding...')
+  geo_list = []
   for r in results:
     zip = r.get('zip')
     city = r.get('city')
-    r['coordinates']  = get_coords(zip, city)
-  return results
+    if zip is None and city is None: continue
+    # TODO add count to coords
+    coords = get_coords(zip, city)
+    if coords is None: 
+      continue
+    coords.append(r.get('count'))
+    geo_list.append(coords)
+  print(f'Returning {len(geo_list)} positions')
+  return geo_list
 
 def sort_results_by_zip_and_city(results):
   print('Sorting...')
@@ -53,23 +76,42 @@ def sort_results_by_zip_and_city(results):
         sr['count'] = sr.get('count') + 1
         found = True
         break
-    if not found: sorted_results.append({'address': address, 'count': 1})
+    if not found: sorted_results.append({'address': address, 'zip': zip, 'city': city, 'count': 1})
 
   return sorted_results
 
+def update_coords_collection(zip, city, coords):
+  msg = f'Requesting OSM API - {zip} {city} {coords}'
+  log('INFO', msg)
+  print(msg)
+  db['zips_cities'].insert_one({'zip': zip, 'city':city, 'coordinates':coords})
+
 def get_coords(zip, city):
-  coords = db['zips_cities'].find_one({'zip': zip, 'city': city},  {'coordinates': 1})
+  query = {'zip': zip, 'city': city}
+  if zip is None: query = {'city': city}
+  if city is None: query = {'zip': zip}
+  coords = db['zips_cities'].find_one(query,  {'coordinates': 1})
   if coords is not None: return coords.get('coordinates')
   elif coords is  None:
-    print(f'Requesting OSM API - {zip} {city}')
-    # TODO when and where to update database?
-    query_str = f'https://nominatim.openstreetmap.org/search.php?countrycode=de&q={zip}%20{city}&format=jsonv2'
+    if zip is None: zip = ''
+    if city is None: city = ''
+    query_str = f'https://nominatim.openstreetmap.org/search.php?countrycode=de&q={zip}%20{city}%20Deutschland&format=jsonv2'
     response = requests.get(query_str)
     response = response.json()
 
+    # TODO when and where to update database?
     if len(response) > 0:
       # return f'{float(response[0].get('lat'))} {float(response[0].get('lon'))}'
-      return float(response[0].get('lat')), float(response[0].get('lon'))
+      api_coords = [float(response[0].get('lat')), float(response[0].get('lon'))]
+
+      if api_coords != api_coords:
+        print(f'NaN {zip} {city}')
+        return None
+      if api_coords is not None:
+        update_coords_collection(zip, city, api_coords)
+        return api_coords
+      print(f'None {zip} {city}')
+
   return None
 
 # query over multiple collections - used for table view
