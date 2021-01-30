@@ -10,6 +10,7 @@ settings.json
 Dockerfile
 *.csv
 *.json
+jupyter/archive/
 
 # pip
 pip-selfcheck.json
