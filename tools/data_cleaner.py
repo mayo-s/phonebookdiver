@@ -73,6 +73,25 @@ def remove_char(elem, char):
     elem = elem.replace(char, '')
   return elem
 
+# remove spaces from street numbers and capitalize letters
+# def clean_hnr():
+#   key_name = 'street_number'
+#   # collections = get_all_collections()
+
+#   collections = ['1992_Q2']
+
+#   for coll in collections: 
+#     info = f'{coll} Cleaning street numbers'
+#     log('INFO', info)
+#     print(info)    
+#     for e in find_entries(coll, key_name, '.* .*'):
+#       e[key_name] = remove_char(e.get(key_name), ' ').upper().strip()
+#       print(f"{coll} {e['_id']} {key_name} {e.get(key_name)}")
+
+#       # update_doc(coll, e['_id'], key_name, e.get(key_name))
+#   print('DONE')
+#   return 'DONE'
+
 def clean_city():
   key_name = 'city'
   collections = get_all_collections()
@@ -88,6 +107,7 @@ def clean_city():
       update_doc(coll, e['_id'], key_name, e.get(key_name))
   print('DONE')
   return 'DONE'
+
 
 # START
 def start():
