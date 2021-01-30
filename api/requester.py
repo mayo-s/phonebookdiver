@@ -99,7 +99,12 @@ def get_coords(zip, city):
     response = requests.get(query_str)
     response = response.json()
 
-    # TODO when and where to update database?
+    # TODO double check if values in bounds of Germany
+    # North: 55.0583° N, 8.4165° E  (> 55.1)
+    # South: 47.2701° N, 10.1783° E (< 47.2)
+    # East: 51.2729° N, 15.0419° E  (> 15.1)
+    # West: 51.0511° N, 5.8663° E   (< 5.8)
+
     if len(response) > 0:
       # return f'{float(response[0].get('lat'))} {float(response[0].get('lon'))}'
       api_coords = [float(response[0].get('lat')), float(response[0].get('lon'))]
