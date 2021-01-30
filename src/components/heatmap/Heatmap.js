@@ -36,7 +36,7 @@ class Heatmap extends Component {
         <HeatmapLayer
           fitBoundsOnLoad
           fitBoundsOnUpdate
-          // gradient={gradient}
+          gradient={gradient}
           points={points}
           longitudeExtractor={m => m[1]}
           latitudeExtractor={m => m[0]}
