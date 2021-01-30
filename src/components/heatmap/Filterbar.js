@@ -7,6 +7,9 @@ class Filterbar extends Component {
     cOptions: [],
     field: '',
     search_str: '',
+
+    loading: false,
+    queryMsg: '',
   }
 
   handleChange = (e) => {
@@ -17,11 +20,26 @@ class Filterbar extends Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
+    if(this.setState.search_str === '') {
+      this.setState({queryMsg: 'Search string missing.'})
+      return null
+    }
+    let queryMsg = 'Querying phone book of ' + this.state.collection + ' for ' + this.state.field + ' = ' + this.state.search_str + '.';
+
+    this.setState({ queryMsg, loading: true })
     // TODO double check for empty search string
     let url = 'http://localhost:5000/hm_search?collection=' + this.state.collection + '&key=' + this.state.field + '&value=' + this.state.search_str;
     fetch(url)
       .then(response => response.json())
-      .then(data => this.props.update_heatMapData(data));
+      .then(data => {
+        this.update_queryMsg(data.length);
+        this.props.update_heatMapData(data);
+      });
+  }
+
+  update_queryMsg = (d_length) => {
+    let queryMsg = this.state.queryMsg + ' Found ' + d_length + ' locations.';
+    this.setState({ queryMsg, loading: false });
   }
 
   createDropdown = () => {
@@ -29,14 +47,12 @@ class Filterbar extends Component {
     fetch('http://localhost:5000/all_collections')
       .then(response => response.json())
       .then(data => {
-        console.log(data);
         options.push(
-          <option value="" disabled selected>Choose YEAR to query</option>);
+          <option value="" disabled selected id="">Choose YEAR to query</option>);
         for (let d in data) {
-          options.push(<option value={d} >{d}</option>);
+          options.push(<option value={d} id={d}>{d}</option>);
         }
         this.setState({ cOptions: options });
-        // console.log('cOptions: ' + this.state.cOptions);
       })
   }
 
@@ -72,7 +88,17 @@ class Filterbar extends Component {
             </div>
           </form>
         </div>
+        <div className="row lmargin">
+        {this.state.queryMsg ? (
+          <div className="white-text query_msg">{this.state.queryMsg}{this.state.loading ? (
+            <div className="progress">
+              <div className="indeterminate"></div>
+            </div>
+          ) : null}</div>
+        ) : null}
+        </div>
       </div>
+
     )
   }
 
