@@ -37,7 +37,10 @@ def get_collection(name):
 
 
 def get_all_collections():
-  return dict.fromkeys(db.list_collection_names(), 'name')
+  c = dict.fromkeys(db.list_collection_names(), 'name')
+  c.pop('geodata')
+  c.pop('counties_states')
+  return c
 
 # used for heatmap
 def find_entries(collection, key, value):
@@ -84,13 +87,13 @@ def update_coords_collection(zip, city, coords):
   msg = f'Requesting OSM API - {zip} {city} {coords}'
   log('INFO', msg)
   print(msg)
-  db['zips_cities'].insert_one({'zip': zip, 'city':city, 'coordinates':coords})
+  db['geodata'].insert_one({'zip': zip, 'city':city, 'coordinates':coords})
 
 def get_coords(zip, city):
   query = {'zip': zip, 'city': city}
   if zip is None: query = {'city': city}
   if city is None: query = {'zip': zip}
-  coords = db['zips_cities'].find_one(query,  {'coordinates': 1})
+  coords = db['geodata'].find_one(query,  {'coordinates': 1})
   if coords is not None: return coords.get('coordinates')
   elif coords is  None:
     if zip is None: zip = ''
