@@ -163,7 +163,7 @@ class Search extends Component {
                   {this.state.cOptions}
                 </select>
                 {this.state.startError ? (
-                  <div style={{ fontSize: 12, color: "red" }}>{this.state.startError}</div>
+                  <div className="err_msg">{this.state.startError}</div>
                 ) : null}
               </div>
 
@@ -186,7 +186,7 @@ class Search extends Component {
                   <option value="firstname">Firstname</option>
                 </select>
                 {this.state.keyError ? (
-                  <div style={{ fontSize: 12, color: "red" }}>{this.state.keyError}</div>
+                  <div className="err_msg">{this.state.keyError}</div>
                 ) : null}
               </div>
               <div className="col s6 m3">
@@ -194,7 +194,7 @@ class Search extends Component {
                   <label htmlFor="search_str">Search string</label>
                   <input className="white-text" type="text" id="pri_search_str" onChange={this.handleChange} />
                   {this.state.strError ? (
-                    <div style={{ fontSize: 12, color: "red" }}>{this.state.strError}</div>
+                    <div className="err_msg">{this.state.strError}</div>
                   ) : null}
                 </div>
               </div>
@@ -215,7 +215,7 @@ class Search extends Component {
                     <option value="area_code">Area Code</option>
                   </select>
                   {this.state.secKeyError ? (
-                    <div style={{ fontSize: 12, color: "red" }}>{this.state.secKeyError}</div>
+                    <div className="err_msg">{this.state.secKeyError}</div>
                   ) : null}
                 </div>
                 <div className="col s6 m3">
@@ -223,7 +223,7 @@ class Search extends Component {
                     <label htmlFor="search_str">2nd search string</label>
                     <input className="white-text" type="text" id="sec_search_str" onChange={this.handleChange} />
                     {this.state.secStrError ? (
-                      <div style={{ fontSize: 12, color: "red" }}>{this.state.secStrError}</div>
+                      <div className="err_msg">{this.state.secStrError}</div>
                     ) : null}
                   </div>
                 </div>
