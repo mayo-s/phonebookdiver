@@ -40,7 +40,7 @@ class Heatmap extends Component {
           points={points}
           longitudeExtractor={m => m[1]}
           latitudeExtractor={m => m[0]}
-          intensityExtractor={m => parseFloat(points.length)} 
+          intensityExtractor={m => parseFloat(m[2])} 
           radius={radius} 
           blur={blur}
           max={max}
