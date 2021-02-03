@@ -2,6 +2,7 @@ import pymongo
 from pymongo import MongoClient
 import datetime
 from datetime import datetime
+import time
 import logging
 import requests
 
@@ -24,13 +25,16 @@ else:
 def log(type, msg):
   date_time = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
   msg = ' ' + date_time + ' ' + msg
-  if type is 'WARNING':
+  if type == 'WARNING':
     logging.warning(msg)
-  if type is 'INFO':
+  if type == 'INFO':
     logging.info(msg)
-  if type is 'LB':
+  if type == 'LB':
     logging.info('')
 
+def processing_time(start, end):
+    time_since = end - start
+    return str(time_since) + ' seconds'
 
 def get_collection(name):
   return db[name]
@@ -39,11 +43,14 @@ def get_collection(name):
 def get_all_collections():
   c = dict.fromkeys(db.list_collection_names(), 'name')
   c.pop('geodata')
-  c.pop('counties_states')
+  c.pop('zips_cities_counties_states')
+  c.pop('counties')
+  c.pop('states')
   return c
 
 # used for heatmap
 def find_entries(collection, key, value):
+  start = time.time()
   print(f'Searching for {value} in {collection, key}')
   results = get_collection(collection).find(
     {key: value}, {'_id': 1, 'zip': 1, 'city': 1})
@@ -64,6 +71,7 @@ def find_entries(collection, key, value):
     coords.append(r.get('count'))
     geo_list.append(coords)
   print(f'Returning {len(geo_list)} positions')
+  print(f'Processing time {processing_time(start, time.time())}')
   return geo_list
 
 def sort_results_by_zip_and_city(results):
@@ -122,11 +130,13 @@ def get_coords(zip, city):
 
   return None
 
+# TODO Refactor - split into smaller pieces
 # query over multiple collections - used for table view
 def search_colls(start, end, key, value, seckey, secvalue):
+  starttime = time.time()
   collections = get_all_collections()
   results = []
-  query_msg = f'Querying the years from {start[:4]} to {end[:4]} for {key} = {value}'
+  query_msg = f'Querying the phone books from {start} to {end} for {key} = {value}'
   if seckey is not None and seckey != '' and secvalue is not None and secvalue != '':
     query_msg += f' and {seckey} = {secvalue}'
   print(query_msg)
@@ -195,6 +205,7 @@ def search_colls(start, end, key, value, seckey, secvalue):
         results.append(new_result)
 
   print(f'Found {len(results)} total results')
+  print(f'Processing time {processing_time(starttime, time.time())}')
   return results
 
 def add_coll_and_sort(list, item):
@@ -217,3 +228,17 @@ def merge_dict_results(dict1, dict2):
 
 def fetch_details_by_id(_id):
   return get_collection(_id[:7]).find_one({'_id': int(_id[7:])})
+
+def get_federal_states():
+  response = db['states'].find({})
+  states = []
+  for r in response:
+    states.append(r['state'])
+  return states
+
+def get_counties():
+  response = db['counties'].find({})
+  counties = []
+  for r in response:
+    counties.append(r['county'])
+  return counties
