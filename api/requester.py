@@ -42,10 +42,10 @@ def get_collection(name):
 
 def get_all_collections():
   c = dict.fromkeys(db.list_collection_names(), 'name')
-  c.pop('geodata')
-  c.pop('zips_cities_counties_states')
-  c.pop('counties')
-  c.pop('states')
+  ignore = ['geodata', 'counties', 'states', 'zips_cities_counties_states']
+  for i in ignore:
+    if i in c:
+      c.pop(i)
   return c
 
 # used for heatmap
@@ -103,7 +103,7 @@ def get_coords(zip, city):
   if city is None: query = {'zip': zip}
   coords = db['geodata'].find_one(query,  {'coordinates': 1})
   if coords is not None: return coords.get('coordinates')
-  elif coords is  None:
+  else:
     if zip is None: zip = ''
     if city is None: city = ''
     query_str = f'https://nominatim.openstreetmap.org/search.php?countrycode=de&q={zip}%20{city}%20Deutschland&format=jsonv2'
@@ -132,24 +132,26 @@ def get_coords(zip, city):
 
 # TODO Refactor - split into smaller pieces
 # query over multiple collections - used for table view
-def search_colls(start, end, key, value, seckey, secvalue):
-  starttime = time.time()
-  collections = get_all_collections()
-  results = []
-  query_msg = f'Querying the phone books from {start} to {end} for {key} = {value}'
-  if seckey is not None and seckey != '' and secvalue is not None and secvalue != '':
-    query_msg += f' and {seckey} = {secvalue}'
-  print(query_msg)
-  for c in collections:
-    if c[:4] > end[:4]: continue
-    if c[:4] < start[:4]: continue
+# def search_colls(start, end, key, value, seckey, secvalue):
+def search_colls(range, query_values):
 
-    if seckey is not None and seckey != '' and secvalue is not None and secvalue != '':
-      response = get_collection(c).find({key: value, seckey: secvalue})
-    else:
-      response = get_collection(c).find({key: value})
-    
-    
+  print(query_values)
+  starttime = time.time()
+  c_range = get_search_range(range[0], range[1])
+  keys = list(query_values.keys())
+  values = list(query_values.values())
+
+  query_msg = f'Querying the phone books from {range[0]} to {range[1]} for {keys[0]} = {values[0]}'
+  if len(query_values) == 2:
+    query_msg += f' and {keys[1]} = {values[1]}'
+  if len(query_values) == 3:
+    query_msg += f' and {keys[2]} = {values[2]}'
+  print(query_msg)
+  
+  results = []
+  for c in c_range:
+
+    response = get_collection(c).find(query_values)
     if response.count() <= 0: continue
     # print(f'Found {response.count()} results in {c}')
 
@@ -211,6 +213,20 @@ def search_colls(start, end, key, value, seckey, secvalue):
 def add_coll_and_sort(list, item):
   list.append(item)
   return sorted(list)
+
+def get_search_range(start, end):
+  all_collections = get_all_collections()
+  range = []
+  for c in all_collections:
+
+    if int(c[:4]) > int(end[:4]): continue
+    elif int(c[:4]) == int(end[:4]) and int(c[6:]) > int(end[6:]): continue
+    elif c[:4] < start[:4]: continue 
+    elif c[:4] == start[:4] and int(c[6:]) < int(end[6:]): continue
+
+    range.append(c)
+
+  return range
 
 def merge_dict_results(dict1, dict2):
   ignore_list = ['_id', 'street_index', 'street_index_hnr', 'coordinates']

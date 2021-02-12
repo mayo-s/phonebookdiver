@@ -45,16 +45,23 @@ def search():
   end = request.args.get('end')
   if end is None:
     return 'INCORRECT RANGE (End)'
-  key = request.args.get('key')
-  if key is None:
-    return 'NO KEY'
-  value = request.args.get('value')
-  if value is None:
-    return 'NO VALUE'
-  seckey = request.args.get('seckey')
-  secvalue = request.args.get('secvalue')
-  
-  return jsonify(search_colls(start, end, key, value, seckey, secvalue))
+  frstkey = request.args.get('frst_key')
+  if frstkey is None:
+    return 'MISSING KEY'
+  frstvalue = request.args.get('frst_value')
+  if frstvalue is None:
+    return 'MISSING VALUE'
+  query_values = { frstkey: frstvalue }
+
+  scndkey = request.args.get('scnd_key')
+  scndvalue = request.args.get('scnd_value')
+  thrdkey = request.args.get('thrd_key')
+  thrdvalue = request.args.get('thrd_value')
+  if scndkey is not None and scndvalue is not None:
+    query_values[scndkey] = scndvalue
+  if thrdkey is not None and thrdvalue is not None:
+    query_values[thrdkey] = thrdvalue
+  return jsonify(search_colls([start, end], query_values))
 
 @app.route('/fetch_details')
 def fetch_details():

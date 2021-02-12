@@ -7,17 +7,22 @@ class Search extends Component {
     cOptions: [],
     collection_start: '',
     collection_end: '',
-    pri_key: '',
-    pri_search_str: '',
-    sec_field: false,
-    sec_key: '',
-    sec_search_str:'',
+    frst_key: '',
+    frst_value: '',
+    scnd_parameter: false,
+    scnd_key: '',
+    scnd_value: '',
+    thrd_parameter: false,
+    thrd_key: '',
+    thrd_value: '',
 
     startError: '',
-    keyError: '',
-    strError: '',
-    secKeyError: '',
-    secStrError: '',
+    frstKeyError: '',
+    frstValueError: '',
+    scndKeyError: '',
+    scndValueError: '',
+    thrdKeyError: '',
+    thrdValueError: '',
 
     loading: false,
     queryMsg: '',
@@ -25,8 +30,9 @@ class Search extends Component {
 
     overlay: '',
   }
-  
+
   handleChange = (e) => {
+    console.log(e.target.id + ': ' + e.target.value)
     this.setState({
       [e.target.id]: e.target.value
     });
@@ -37,14 +43,16 @@ class Search extends Component {
     const isValid = this.validateForm();
 
     if (isValid) {
-      
-      let queryMsg = 'Querying the years from ' + this.state.collection_start.substr(0, 4) + ' to ' + this.state.collection_end.substr(0, 4) + ' for ' + this.state.pri_key + ' = ' + this.state.pri_search_str;
-      if(this.state.sec_field && this.state.secKeyError && this.state.secStrError) queryMsg += ' and ' + this.state.sec_key + ' = ' + this.state.sec_search_str + '.';
-      else queryMsg += '.';
+
+      let queryMsg = 'Querying the phone book years from ' + this.state.collection_start + ' to ' + this.state.collection_end + ' for ' + this.state.frst_key + ' = ' + this.state.frst_value;
+      if (this.state.scnd_key && this.state.scnd_value) queryMsg += ' AND ' + this.state.scnd_key + ' = ' + this.state.scnd_value;
+      if (this.state.scnd_key && this.state.scnd_value) queryMsg += ' AND ' + this.state.thrd_key + ' = ' + this.state.thrd_value;
+      queryMsg += '.';
       this.setState({ queryMsg, loading: true })
 
-      let url = 'http://localhost:5000/search?start=' + this.state.collection_start + '&end=' + this.state.collection_end + '&key=' + this.state.pri_key + '&value=' + this.state.pri_search_str;
-      if(this.state.sec_field) url += '&seckey=' + this.state.sec_key + '&secvalue=' + this.state.sec_search_str;
+      let url = 'http://localhost:5000/search?start=' + this.state.collection_start + '&end=' + this.state.collection_end + '&frst_key=' + this.state.frst_key + '&frst_value=' + this.state.frst_value;
+      if (this.state.scnd_value !== '') url += '&scnd_key=' + this.state.scnd_key + '&scnd_value=' + this.state.scnd_value;
+      if (this.state.thrd_value !== '') url += '&thrd_key=' + this.state.thrd_key + '&thrd_value=' + this.state.thrd_value;
       console.log(url);
       fetch(url)
         .then(response => response.json())
@@ -53,34 +61,58 @@ class Search extends Component {
   }
 
   validateForm = () => {
-    let keyError, strError, startError, secKeyError, secStrError = '';
+    let frstKeyError, frstValueError, startError, scndKeyError, scndValueError, thrdKeyError, thrdValueError = '';
 
     if (parseInt(this.state.collection_start.substr(0, 4)) > parseInt(this.state.collection_end.substr(0, 4))) {
       startError = 'First YEAR value must be lower than second.';
     }
 
-    if (!this.state.pri_key) {
-      keyError = 'Please choose a FIELD to query';
+    if (!this.state.frst_key) {
+      frstKeyError = 'Please choose a FIELD to query';
     }
 
-    if (!this.state.pri_search_str || this.state.pri_search_str.length < 2) {
-      strError = 'Search string cannot be empty and must have at least 2 letters';
+    if (!this.state.frst_value || this.state.frst_value.length < 2) {
+      frstValueError = 'Search string cannot be empty and must have at least 2 letters';
     }
 
-    if (!this.state.sec_key) {
-      secKeyError = 'Please choose a FIELD to query';
+    if (!this.state.scnd_key) {
+      scndKeyError = 'Please choose a FIELD to query';
     }
 
-    if (!this.state.sec_search_str || this.state.sec_search_str.length < 2) {
-      secStrError = 'Empty second search string will not be considered';
+    if (!this.state.scnd_value || this.state.scnd_value.length < 2) {
+      scndValueError = 'Empty search string will not be considered';
     }
 
-    if (startError || keyError || strError) {
-      this.setState({ startError, keyError, strError, secKeyError, secStrError });
+    if (!this.state.thrd_key) {
+      scndKeyError = 'Please choose a FIELD to query';
+    }
+
+    if (!this.state.thrd_value || this.state.thrd_value.length < 2) {
+      scndValueError = 'Empty search string will not be considered';
+    }
+
+    if (startError || frstKeyError || frstValueError) {
+      this.setState({
+        startError,
+        frstKeyError: frstKeyError,
+        frstValueError: frstValueError,
+        scndKeyError: scndKeyError,
+        scndValueError: scndValueError,
+        thrdKeyError: thrdKeyError,
+        thrdValueError: thrdValueError
+      });
       return false;
     }
 
-    this.setState({ startError, keyError, strError, secKeyError, secStrError });
+    this.setState({
+      startError,
+      keyError: frstKeyError,
+      strError: frstValueError,
+      scndKeyError: scndKeyError,
+      scndStrError: scndValueError,
+      thrdKeyError: thrdKeyError,
+      thrdValueError: thrdValueError
+    });
     return true
   }
 
@@ -90,16 +122,27 @@ class Search extends Component {
   }
 
   update_results = (results) => {
-    this.setState({results})
+    this.setState({ results })
   }
 
-  add_sec_field = () => {
-    let value = !this.state.sec_field;
-    this.setState({sec_field: value});
-    if(value === false) {
+  scndParameter = () => {
+    let value = !this.state.scnd_parameter;
+    this.setState({ scnd_parameter: value });
+    if (value === false) {
       this.setState({
-        sec_key: '',
-        sec_search_str: '',
+        scnd_key: '',
+        scnd_value: '',
+      })
+    }
+  }
+
+  thrdParameter = () => {
+    let value = !this.state.thrd_parameter;
+    this.setState({ thrd_parameter: value });
+    if (value === false) {
+      this.setState({
+        thrd_key: '',
+        thrd_value: '',
       })
     }
   }
@@ -113,6 +156,7 @@ class Search extends Component {
         let last = '0000_Q0';
         for (let d in data) {
           options.push(<option value={d} key={d}>{d}</option>);
+          // TODO Check also for quarter
           if (parseInt(first.substr(0, 4)) > parseInt(d.substr(0, 4))) first = d;
           if (parseInt(last.substr(0, 4)) < parseInt(d.substr(0, 4))) last = d;
         }
@@ -125,16 +169,16 @@ class Search extends Component {
     data['c_id'] = id;
     let info = this.parse_details(data);
 
-    let overlay = (      
-      <div className="overlay_blur" onClick={() => this.setState({overlay: ''})}>
+    let overlay = (
+      <div className="overlay_blur" onClick={() => this.setState({ overlay: '' })}>
         <div className="card overlay_content">
-          <h5>Record Details {data['c_id'].substr(0,7)}</h5>
+          <h5>Record Details {data['c_id'].substr(0, 7)}</h5>
           {info.map((i) => {
             return (<p><b>{i}:</b> {data[i]}</p>)
           })}
         </div>
       </div>)
-    this.setState({overlay});
+    this.setState({ overlay });
   }
 
   parse_details = (data) => {
@@ -147,7 +191,7 @@ class Search extends Component {
 
   render() {
     if (!this.state.cOptions.length) this.getCollections();
-
+    console.log(this.state)
     return (
       <div className='dashboard'>
         {this.state.overlay ? (this.state.overlay) : null}
@@ -180,57 +224,91 @@ class Search extends Component {
 
             <div className="row lmargin">
               <div className="input-field col s6 m3">
-                <select className="browser-default" id="pri_key" defaultValue={""} onChange={this.handleChange} >
+                <select className="browser-default" id="frst_key" defaultValue={""} onChange={this.handleChange} >
                   <option value="" disabled>Choose FIELD to query</option>
                   <option value="lastname">Lastname</option>
                   <option value="firstname">Firstname</option>
                 </select>
-                {this.state.keyError ? (
-                  <div className="err_msg">{this.state.keyError}</div>
+                {this.state.frstKeyError ? (
+                  <div className="err_msg">{this.state.frstKeyError}</div>
                 ) : null}
               </div>
               <div className="col s6 m3">
                 <div className="input-field">
                   <label htmlFor="search_str">Search string</label>
-                  <input className="white-text" type="text" id="pri_search_str" onChange={this.handleChange} />
-                  {this.state.strError ? (
-                    <div className="err_msg">{this.state.strError}</div>
+                  <input className="white-text" type="text" id="frst_value" onChange={this.handleChange} />
+                  {this.state.frstValueError ? (
+                    <div className="err_msg">{this.state.frstValueError}</div>
                   ) : null}
                 </div>
               </div>
-              {!this.state.sec_field ? (
-              <div>
-                <a className="btn-floating btn-small center-align" onClick={this.add_sec_field}><i className="material-icons">add</i></a>
-              </div>) : null}
+              {!this.state.scnd_parameter ? (
+                <div>
+                  <a className="btn-floating btn-small center-align" onClick={this.scndParameter}><i className="material-icons">add</i></a>
+                </div>) : null}
             </div>
 
-            {this.state.sec_field ? (
+            {this.state.scnd_parameter ? (
               <div className="row lmargin">
                 <div className="input-field col s6 m3">
-                  <select className="browser-default" id="sec_key" defaultValue={""} onChange={this.handleChange} >
+                  <select className="browser-default" id="scnd_key" defaultValue={""} onChange={this.handleChange} >
                     <option value="" disabled>Choose second FIELD to query</option>
-                    {this.state.pri_key === 'lastname' ? (<option value="firstname">Firstname</option>) : (<option value="lastname">Lastname</option>)}
-                    <option value="zip">ZIP</option>
-                    <option value="city">City</option>
-                    <option value="area_code">Area Code</option>
+                    {this.state.frst_key === 'lastname' ? (<option value="firstname">Firstname</option>) : (<option value="lastname">Lastname</option>)}
+                    {this.state.thrd_key === 'zip' ? (null) : (<option value="zip">ZIP</option>)}
+                    {this.state.thrd_key === 'city' ? (null) : (<option value="city">City</option>)}
+                    {this.state.thrd_key === 'area_code' ? (null) : (<option value="area_code">Area Code</option>)}
                   </select>
-                  {this.state.secKeyError ? (
-                    <div className="err_msg">{this.state.secKeyError}</div>
+                  {this.state.scndKeyError ? (
+                    <div className="err_msg">{this.state.scndKeyError}</div>
                   ) : null}
                 </div>
                 <div className="col s6 m3">
                   <div className="input-field">
                     <label htmlFor="search_str">2nd search string</label>
-                    <input className="white-text" type="text" id="sec_search_str" onChange={this.handleChange} />
-                    {this.state.secStrError ? (
-                      <div className="err_msg">{this.state.secStrError}</div>
+                    <input className="white-text" type="text" id="scnd_value" onChange={this.handleChange} />
+                    {this.state.scndValueError ? (
+                      <div className="err_msg">{this.state.scndValueError}</div>
                     ) : null}
                   </div>
                 </div>
-                {this.state.sec_field ? (
                 <div>
-                  <a className="btn-floating btn-small center-align" onClick={this.add_sec_field}><i className="material-icons">remove</i></a>
-                </div>) : null}
+                  {this.state.scnd_parameter ? (
+                    <a className="btn-floating btn-small center-align" onClick={this.scndParameter}><i className="material-icons">remove</i></a>
+                  ) : null}
+                  {!this.state.thrd_parameter ? (
+                    <a className="btn-floating btn-small center-align" onClick={this.thrdParameter}><i className="material-icons">add</i></a>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+
+            {this.state.thrd_parameter ? (
+              <div className="row lmargin">
+                <div className="input-field col s6 m3">
+                  <select className="browser-default" id="thrd_key" defaultValue={""} onChange={this.handleChange} >
+                    <option value="" disabled>Choose second FIELD to query</option>
+                    {this.state.frst_key === 'lastname' ? (<option value="firstname">Firstname</option>) : (<option value="lastname">Lastname</option>)}
+                    {this.state.scnd_key === 'zip' ? (null) : (<option value="zip">ZIP</option>)}
+                    {this.state.scnd_key === 'city' ? (null) : (<option value="city">City</option>)}
+                    {this.state.scnd_key === 'area_code' ? (null) : (<option value="area_code">Area Code</option>)}
+                  </select>
+                  {this.state.thrdKeyError ? (
+                    <div className="err_msg">{this.state.thrdKeyError}</div>
+                  ) : null}
+                </div>
+                <div className="col s6 m3">
+                  <div className="input-field">
+                    <label htmlFor="search_str">3rd search string</label>
+                    <input className="white-text" type="text" id="thrd_value" onChange={this.handleChange} />
+                    {this.state.thrdValueError ? (
+                      <div className="err_msg">{this.state.thrdValueError}</div>
+                    ) : null}
+                  </div>
+                </div>
+                {this.state.thrd_parameter ? (
+                  <div>
+                    <a className="btn-floating btn-small center-align" onClick={this.thrdParameter}><i className="material-icons">remove</i></a>
+                  </div>) : null}
               </div>
             ) : null}
 
@@ -245,7 +323,7 @@ class Search extends Component {
             </div>
           </form>
           <div className="row lmargin">
-            <ResultTable results = {this.state.results} update_results = {this.update_results} details_overlay = {this.details_overlay}/>
+            <ResultTable results={this.state.results} update_results={this.update_results} details_overlay={this.details_overlay} />
           </div>
         </div>
 
