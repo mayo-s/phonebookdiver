@@ -46,7 +46,7 @@ class Search extends Component {
 
       let queryMsg = 'Querying the phone book years from ' + this.state.collection_start + ' to ' + this.state.collection_end + ' for ' + this.state.frst_key + ' = ' + this.state.frst_value;
       if (this.state.scnd_key && this.state.scnd_value) queryMsg += ' AND ' + this.state.scnd_key + ' = ' + this.state.scnd_value;
-      if (this.state.scnd_key && this.state.scnd_value) queryMsg += ' AND ' + this.state.thrd_key + ' = ' + this.state.thrd_value;
+      if (this.state.thrd_key && this.state.thrd_value) queryMsg += ' AND ' + this.state.thrd_key + ' = ' + this.state.thrd_value;
       queryMsg += '.';
       this.setState({ queryMsg, loading: true })
 
@@ -84,11 +84,11 @@ class Search extends Component {
     }
 
     if (!this.state.thrd_key) {
-      scndKeyError = 'Please choose a FIELD to query';
+      thrdKeyError = 'Please choose a FIELD to query';
     }
 
     if (!this.state.thrd_value || this.state.thrd_value.length < 2) {
-      scndValueError = 'Empty search string will not be considered';
+      thrdValueError = 'Empty search string will not be considered';
     }
 
     if (startError || frstKeyError || frstValueError) {
