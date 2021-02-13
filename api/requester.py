@@ -134,18 +134,12 @@ def get_coords(zip, city):
 # query over multiple collections - used for table view
 # def search_colls(start, end, key, value, seckey, secvalue):
 def search_colls(range, query_values):
-
-  print(query_values)
   starttime = time.time()
   c_range = get_search_range(range[0], range[1])
   keys = list(query_values.keys())
   values = list(query_values.values())
 
-  query_msg = f'Querying the phone books from {range[0]} to {range[1]} for {keys[0]} = {values[0]}'
-  if len(query_values) == 2:
-    query_msg += f' and {keys[1]} = {values[1]}'
-  if len(query_values) == 3:
-    query_msg += f' and {keys[2]} = {values[2]}'
+  query_msg = f'Querying the phone books from {range[0]} to {range[1]} for\n{query_values}'
   print(query_msg)
   
   results = []
@@ -158,39 +152,28 @@ def search_colls(range, query_values):
     for resp in response:
       found = False
       resp_id = c + str(resp.get('_id'))
-      ln = resp.get('lastname')
-      if ln is None: ln = ''
-      fn = resp.get('firstname')
-      if fn is None: fn = ''
-      zip = resp.get('zip')
-      if zip is None: zip = ''
-      city = resp.get('city')
-      if city is None: city = ''
-      st = resp.get('street')
-      if st is None: st = ''
-      stn = resp.get('street_number')
-      if stn is None: stn = ''
-      ac = resp.get('area_code')
-      if ac is None: ac = ''
+      ln, fn, zip, city, st, stn, ac = '', '', '', '', '', '', ''
+      if resp.get('lastname') is not None: ln = resp.get('lastname')
+      if resp.get('firstname') is not None: fn = resp.get('firstname')
+      if resp.get('zip') is not  None: zip = resp.get('zip')
+      if resp.get('city') is not None: city = resp.get('city')
+      if resp.get('street') is not None: st = resp.get('street')
+      if resp.get('street_number') is not None: stn = resp.get('street_number')
+      if resp.get('area_code') is not None: ac = resp.get('area_code')
 
       # TODO: how to cope with same name at same address i.e. Michael Müller
       for res in results:
-        res_ln = res.get('lastname')
-        if res_ln is None: res_ln = ''
-        res_fn = res.get('firstname')
-        if res_fn is None: res_fn = ''
-        res_zip = res.get('zip')
-        if res_zip is None: res_zip = ''
-        res_city = res.get('city')
-        if res_city is None: res_city = ''
-        res_st = res.get('street')
-        if res_st is None: res_st = ''
-        res_stn = res.get('street_number')
-        if res_stn is None: res_stn = ''
-        res_ac = res.get('area_code')
-        if res_ac is None: res_ac = ''
+        res_ln, res_fn, res_zip, res_city, res_st, res_stn, res_ac = '', '', '', '', '', '', ''
+        if res.get('lastname') is not None: res_ln = res.get('lastname')
+        if res.get('firstname') is not None: res_fn = res.get('firstname')
+        if res.get('zip') is not  None: res_zip = res.get('zip')
+        if res.get('city') is not None: res_city = res.get('city')
+        if res.get('street') is not None: res_st = res.get('street')
+        if res.get('street_number') is not None: res_stn = res.get('street_number')
+        if res.get('area_code') is not None: res_ac = res.get('area_code')
+        
 
-        if ln == res_ln and fn == res_fn and zip == res_zip and city == res_city and st == res_st and stn.upper() == res_stn.upper() and ac == res_ac:
+        if ln.lower() == res_ln.lower() and fn.lower() == res_fn.lower() and zip == res_zip and city.lower() == res_city.lower() and st.lower() == res_st.lower() and stn.upper() == res_stn.upper() and ac.lower() == res_ac.lower():
           res['appearance'] = add_coll_and_sort(res['appearance'], resp_id)
           temp_res = merge_dict_results(res, resp)
           if temp_res is None: break
