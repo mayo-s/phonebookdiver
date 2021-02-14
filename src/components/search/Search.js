@@ -158,7 +158,9 @@ class Search extends Component {
           options.push(<option value={d} key={d}>{d}</option>);
           // TODO Check also for quarter
           if (parseInt(first.substr(0, 4)) > parseInt(d.substr(0, 4))) first = d;
+          else if (parseInt(first.substr(0, 4)) === parseInt(d.substr(0, 4)) && parseInt(first.substr(first.length - 1) ) > parseInt(d.substr(d.length - 1) )) first = d;
           if (parseInt(last.substr(0, 4)) < parseInt(d.substr(0, 4))) last = d;
+          else if (parseInt(last.substr(0, 4)) === parseInt(d.substr(0, 4)) && parseInt(first.substr(first.length - 1) ) < parseInt(d.substr(d.length - 1) )) last = d;
         }
         // by default range over all available collections
         this.setState({ cOptions: options, collection_start: first, collection_end: last });
