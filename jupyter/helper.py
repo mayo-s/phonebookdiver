@@ -7,6 +7,7 @@ collections = []
 
 def get_phonebooks(database):
     db = database
+    collections = []
     ignore = ['geodata', 'counties', 'states', 'zips_cities_counties_states']
     for key in dict.fromkeys(db.list_collection_names(), 'name'):
         collections.append(key)
