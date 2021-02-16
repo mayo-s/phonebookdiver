@@ -138,6 +138,7 @@ def search_colls(range, query_values):
   c_range = get_search_range(range[0], range[1])
   keys = list(query_values.keys())
   values = list(query_values.values())
+  total_count = 0
 
   query_msg = f'Querying the phone books from {range[0]} to {range[1]} for\n{query_values}'
   print(query_msg)
@@ -148,7 +149,7 @@ def search_colls(range, query_values):
     response = get_collection(c).find(query_values)
     if response.count() <= 0: continue
     # print(f'Found {response.count()} results in {c}')
-
+    total_count += response.count()
     for resp in response:
       found = False
       resp_id = c + str(resp.get('_id'))
@@ -174,7 +175,7 @@ def search_colls(range, query_values):
         
 
         if ln.lower() == res_ln.lower() and fn.lower() == res_fn.lower() and zip == res_zip and city.lower() == res_city.lower() and st.lower() == res_st.lower() and stn.upper() == res_stn.upper() and ac.lower() == res_ac.lower():
-          res['appearance'] = add_coll_and_sort(res['appearance'], resp_id)
+          res['edition'] = add_coll_and_sort(res['edition'], resp_id)
           temp_res = merge_dict_results(res, resp)
           if temp_res is None: break
           else:
@@ -184,12 +185,12 @@ def search_colls(range, query_values):
 
       if not found:
         new_result = resp
-        new_result['appearance'] = []
+        new_result['edition'] = []
         new_result['_id'] = resp_id
-        new_result['appearance'].append(resp_id)
+        new_result['edition'].append(resp_id)
         results.append(new_result)
 
-  print(f'Found {len(results)} total results')
+  print(f'Found {str(total_count)} total results. Returned {len(results)}')
   print(f'Processing time {processing_time(starttime, time.time())}')
   return results
 

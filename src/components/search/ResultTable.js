@@ -4,7 +4,7 @@ import React, { Component } from 'react';
 class ResultTable extends Component {
 
   state = {
-    header: ['lastname', 'firstname', 'city', 'zip', 'street', 'area_code', 'phonenumber', 'appearance'],
+    header: ['lastname', 'firstname', 'city', 'zip', 'street', 'area_code', 'phonenumber', 'edition'],
     ignore_header: ['_id', 'flags', 'street_number', 'street_index_hnr', 'street_index'],
   }
 
@@ -14,8 +14,8 @@ class ResultTable extends Component {
         {header.map((h) => {
           if(this.state.ignore_header.includes(h)) return null
 
-          if(h === 'appearance') return (<td>
-            {result.appearance.map((a) => {
+          if(h === 'edition') return (<td>
+            {result.edition.map((a) => {
               return (<a onClick={() => this.fetch_details(a)}>{a.substr(0,7)} </a>)
             })}
           </td>)
