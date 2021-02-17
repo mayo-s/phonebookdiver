@@ -5,6 +5,7 @@ from datetime import datetime
 import time
 import logging
 import requests
+import collections
 
 # author: Mario Schuetz
 #
@@ -153,11 +154,11 @@ def search_colls(range, query_values):
     for resp in response:
       found = False
       resp_id = c + str(resp.get('_id'))
-      resp_hash = build_address_hash(resp)
+      resp_hash = build_address_hash(collections.OrderedDict(sorted(resp.items())))
 
       # TODO: how to cope with same name at same address i.e. Michael Müller
       for res in results:
-        res_hash = build_address_hash(res)
+        res_hash = build_address_hash(collections.OrderedDict(sorted(res.items())))
 
         if resp_hash == res_hash:
           res['edition'] = add_coll_and_sort(res['edition'], resp_id)
