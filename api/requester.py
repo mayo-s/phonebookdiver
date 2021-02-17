@@ -153,28 +153,13 @@ def search_colls(range, query_values):
     for resp in response:
       found = False
       resp_id = c + str(resp.get('_id'))
-      ln, fn, zip, city, st, stn, ac = '', '', '', '', '', '', ''
-      if resp.get('lastname') is not None: ln = resp.get('lastname')
-      if resp.get('firstname') is not None: fn = resp.get('firstname')
-      if resp.get('zip') is not  None: zip = resp.get('zip')
-      if resp.get('city') is not None: city = resp.get('city')
-      if resp.get('street') is not None: st = resp.get('street')
-      if resp.get('street_number') is not None: stn = resp.get('street_number')
-      if resp.get('area_code') is not None: ac = resp.get('area_code')
+      resp_hash = build_address_hash(resp)
 
       # TODO: how to cope with same name at same address i.e. Michael Müller
       for res in results:
-        res_ln, res_fn, res_zip, res_city, res_st, res_stn, res_ac = '', '', '', '', '', '', ''
-        if res.get('lastname') is not None: res_ln = res.get('lastname')
-        if res.get('firstname') is not None: res_fn = res.get('firstname')
-        if res.get('zip') is not  None: res_zip = res.get('zip')
-        if res.get('city') is not None: res_city = res.get('city')
-        if res.get('street') is not None: res_st = res.get('street')
-        if res.get('street_number') is not None: res_stn = res.get('street_number')
-        if res.get('area_code') is not None: res_ac = res.get('area_code')
-        
+        res_hash = build_address_hash(res)
 
-        if ln.lower() == res_ln.lower() and fn.lower() == res_fn.lower() and zip == res_zip and city.lower() == res_city.lower() and st.lower() == res_st.lower() and stn.upper() == res_stn.upper() and ac.lower() == res_ac.lower():
+        if resp_hash == res_hash:
           res['edition'] = add_coll_and_sort(res['edition'], resp_id)
           temp_res = merge_dict_results(res, resp)
           if temp_res is None: break
@@ -193,6 +178,16 @@ def search_colls(range, query_values):
   print(f'Found {str(total_count)} total results. Returned {len(results)}')
   print(f'Processing time {processing_time(starttime, time.time())}')
   return results
+
+def build_address_hash(address):
+    wanted_keys = ['lastname', 'firstname', 'zip', 'city', 'street', 'street_number', 'area_code', 'phonenumber']
+    address_str = ''
+    for k in address:
+        if k in wanted_keys:
+            print(k)
+            address_str += address.get(k)
+            print(address_str)
+    return address_str.lower().__hash__()
 
 def add_coll_and_sort(list, item):
   list.append(item)
