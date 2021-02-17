@@ -1,7 +1,9 @@
+import logging
 import time
 import numpy as np
 import pandas as pd
 
+logging.basicConfig(filename='./archive/_phonebookdiver-notebook.log', level=logging.DEBUG)
 db = None
 collections = []
 
@@ -17,6 +19,16 @@ def get_phonebooks(database):
         if i in collections:
             collections.remove(i)
     return collections
+
+def log(type, msg):
+  date_time = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+  msg = ' ' + date_time + ' ' + msg
+  if type is 'WARNING':
+    logging.warning(msg)
+  if type is 'INFO':
+    logging.info(msg)
+  if type is 'LB':
+    logging.info('')
 
 def elapsed_time(start, end):
     time_since = end - start
