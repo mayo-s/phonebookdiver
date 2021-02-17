@@ -184,9 +184,7 @@ def build_address_hash(address):
     address_str = ''
     for k in address:
         if k in wanted_keys:
-            print(k)
             address_str += address.get(k)
-            print(address_str)
     return address_str.lower().__hash__()
 
 def add_coll_and_sort(list, item):
