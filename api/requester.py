@@ -143,6 +143,14 @@ def search_colls(range, query_values):
 
   query_msg = f'Querying the phone books from {range[0]} to {range[1]} for\n{query_values}'
   print(query_msg)
+
+  if range[0] == range[1]:
+    print(f'Processing time {processing_time(starttime, time.time())}')
+
+    results = list(get_collection(range[0]).find(query_values))
+    for res in results:
+      res['edition'] = [range[0]]
+    return results
   
   results = []
   for c in c_range:
