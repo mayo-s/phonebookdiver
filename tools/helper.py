@@ -17,11 +17,11 @@ encoding = ['cp437', 'iso-8859-1']
 def log(type, msg):
   date_time = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
   msg = ' ' + date_time + ' ' + msg
-  if type is 'WARNING':
+  if type == 'WARNING':
     logging.warning(msg)
-  if type is 'INFO':
+  if type == 'INFO':
     logging.info(msg)
-  if type is 'LB':
+  if type == 'LB':
     logging.info('')
 
 def get_main_dir():
