@@ -6,13 +6,10 @@ import numpy as np
 import pandas as pd
 
 logging.basicConfig(filename='./archive/_phonebookdiver-notebook.log', level=logging.DEBUG)
-db = None
-collections = []
 
-def get_phonebooks(database):
-    db = database
-    collections = []
+def get_phonebooks(db):
     ignore = ['geodata', 'counties', 'states', 'zips_cities_counties_states']
+    collections = []
     for key in dict.fromkeys(db.list_collection_names(), 'name'):
         collections.append(key)
     collections.sort()
@@ -43,21 +40,8 @@ def export_results(results, collection, values, with_index):
         path += '_' + v
     path += '.csv'
     results.to_csv(path, index=with_index)
-    
-def get_record_by_id(collection, id):
-    return pd.DataFrame(db[collection].find({'_id': id}))
 
-def trace_phonenr(area_code, phone_nr):
-    records = []
-    for  c in collections:
-        record = db[c].find_one({'area_code': area_code, 'phonenumber': phone_nr})
-        if record is not None:
-            record['collection'] = c
-            records.append(record)
-
-    return pd.DataFrame(records)
-
-def create_collection(collection_name, dataframe, reset_index):
+def create_collection(db, collection_name, dataframe, reset_index):
     start = time.time()
     if collection_name in db.list_collection_names(): 
         return f'Collection {collection_name} already exists.'
@@ -68,18 +52,25 @@ def create_collection(collection_name, dataframe, reset_index):
     return f'Collection {collection_name} successfully inserted. {t}'
 
 # create new INDEX in all collections
-def create_index_on_fields(field_names):
-    start = time.time()
+def create_index_on_fields(db, collections, field_names):
+    msg = 'Create indices'
+    print(msg)
+    log('INFO', msg)
+    _start = time.time()
     for field_name in field_names:
         for c in collections:
             db.get_collection(c).create_index(field_name)
-        print(f'{field_name} {elapsed_time(start, time.time())}')
-    return elapsed_time(start, time.time())
+            msg = f'Index created on {c} {field_name} - processing time {elapsed_time(start, time.time())}'
+            print(msg)
+            log('INFO', msg)
+    msg  = f'{len(field_names)} indecies created in {elapsed_time(_start, time.time())}'
+    log('INFO', msg)
+    return msg
     # 5152.3292899131775 seconds [area_code] (85 minutes)
     # 4967.730529785156 seconds , #2 '4937.383540868759 seconds' [zip]
     # 5070.640741109848 seconds [city]
     
-def create_index_on_field(field_name):
+def create_index_on_field(db, collections, field_name):
     start = time.time()
     for c in collections:
         db.get_collection(c).create_index(field_name)
