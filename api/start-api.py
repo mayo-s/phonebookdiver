@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from requester import get_all_collections, find_entries, search_colls, fetch_details_by_id, get_federal_states, get_counties
+from requester import get_all_collections, search_colls, fetch_details_by_id, get_federal_states, get_counties
+from hm_requester import  hm_query
 
 # author: Mario Schuetz
 #
@@ -27,7 +28,7 @@ def hm_search():
   if value is None:
     return 'NO VALUE'
 
-  return jsonify(find_entries(collection, key, value))
+  return jsonify(hm_query(collection, key, value))
 
 @app.route('/federal_states')
 def federal_states():
