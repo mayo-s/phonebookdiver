@@ -31,7 +31,12 @@ def log(type, msg):
 
 def elapsed_time(start, end):
     time_since = end - start
-    return str(time_since) + ' seconds'
+    return convert_time(time_since)
+
+def convert_time(time_value):
+    if time_value >= 5400: return str(time_value/3600) + ' hours'
+    elif time_value >= 180: return str(time_value/60) + ' minutes'
+    return str(time_value) + ' seconds'
 
 # Add collection and a list of values to specify filename
 def export_results(results, collection, values, with_index):
@@ -59,6 +64,7 @@ def create_index_on_fields(db, collections, field_names):
     _start = time.time()
     for field_name in field_names:
         for c in collections:
+            start = time.time()
             db.get_collection(c).create_index(field_name)
             msg = f'Index created on {c} {field_name} - processing time {elapsed_time(start, time.time())}'
             print(msg)
@@ -69,9 +75,3 @@ def create_index_on_fields(db, collections, field_names):
     # 5152.3292899131775 seconds [area_code] (85 minutes)
     # 4967.730529785156 seconds , #2 '4937.383540868759 seconds' [zip]
     # 5070.640741109848 seconds [city]
-    
-def create_index_on_field(db, collections, field_name):
-    start = time.time()
-    for c in collections:
-        db.get_collection(c).create_index(field_name)
-    return elapsed_time(start, time.time())
