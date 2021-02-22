@@ -40,7 +40,7 @@ def search_colls(range, query_values):
 
     results = list(db[range[0]].find(query_values))
     for res in results:
-      res['edition'] = [range[0]]
+      res['edition'] = [range[0] + str(res.get('_id'))]
     print(f'Processing time {helper.processing_time(starttime, time.time())}')
     return results
   
