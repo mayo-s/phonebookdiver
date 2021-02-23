@@ -1,5 +1,4 @@
 import pymongo
-from pymongo import MongoClient
 import time
 import requests
 import collections
@@ -11,14 +10,20 @@ import helper
 #
 
 MONGO_URI = 'mongodb://127.0.0.1:27017'
+db = None
 
-try:
-  client = MongoClient(MONGO_URI)
-  db = client.phonebookdiver
-except pymongo.errors.ConnectionFailure as err:
-  print(err)
-else:
-  print(f'CONNECTED to {MONGO_URI} {db.name}')
+def open_db():
+  try:
+    client = pymongo.MongoClient(MONGO_URI)
+    global db
+    db = client.phonebookdiver
+  except pymongo.errors.ConnectionFailure as err:
+    print(err)
+  else:
+    print(f'CONNECTED to {MONGO_URI} {db.name}')
+
+def get_current_db():
+  return db
 
 def get_all_collections():
   return helper.get_all_collections(db)
@@ -55,20 +60,14 @@ def search_colls(range, query_values):
       found = False
       resp_id = c + str(resp.get('_id'))
       resp_hash = build_address_hash(collections.OrderedDict(sorted(resp.items())))
-
-      # TODO: how to cope with same name at same address i.e. Michael Müller
       for res in results:
         res_hash = build_address_hash(collections.OrderedDict(sorted(res.items())))
-
+        
         if resp_hash == res_hash:
           res['edition'] = add_coll_and_sort(res['edition'], resp_id)
-          temp_res = merge_dict_results(res, resp)
-          if temp_res is None: break
-          else:
-            res = temp_res
-            found = True
-            break
-
+          res = merge_dict_results(res, resp)
+          found = True
+          break
       if not found:
         new_result = resp
         new_result['edition'] = []
@@ -81,12 +80,16 @@ def search_colls(range, query_values):
   return results
 
 def build_address_hash(address):
-    wanted_keys = ['lastname', 'firstname', 'zip', 'city', 'street', 'street_number', 'area_code', 'phonenumber']
-    address_str = ''
-    for k in address:
-        if k in wanted_keys:
-            address_str += address.get(k)
-    return address_str.lower().__hash__()
+  wanted_keys = ['lastname', 'firstname', 'zip', 'city', 'street', 'street_number', 'area_code', 'phonenumber']
+  address_str = ''
+  for k in address:
+    if k in wanted_keys:
+      address_str += address.get(k)
+      if k == 'street_number':
+        address_str = address_str.replace(' ', '')
+      if k == 'street':
+        address_str = replace_dash_str(address_str)
+  return address_str.lower().__hash__()
 
 def add_coll_and_sort(list, item):
   list.append(item)
@@ -110,14 +113,22 @@ def merge_dict_results(dict1, dict2):
 
   for elem2 in dict2:
     if elem2 in ignore_list: continue
-    if elem2 not in dict1:
-      dict1[elem2] = dict2.get(elem2)
-    elif dict1[elem2].lower() == dict2.get(elem2).lower():
+    elem2_value = dict2.get(elem2)
+    if elem2 == 'street':
+      elem2_value = replace_dash_str(elem2_value)
+      dict1[elem2] = elem2_value
       continue
-    else: 
-      return None
-
+    if elem2 not in dict1:
+      dict1[elem2] = elem2_value
+    elif dict1[elem2].lower() == elem2_value.lower():
+      continue
   return dict1
+
+def replace_dash_str(street_str):
+  if street_str[(len(street_str)-1):] == '-':
+    return street_str[:(len(street_str)-1)] + 'str.'
+  return street_str
+      
 
 def fetch_details_by_id(_id):
   return db[_id[:7]].find_one({'_id': int(_id[7:])})
