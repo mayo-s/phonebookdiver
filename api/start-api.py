@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from requester import get_all_collections, search_colls, fetch_details_by_id, get_federal_states, get_counties
-from hm_requester import  hm_query
+from requester import open_db, get_current_db, get_all_collections, search_colls, fetch_details_by_id, get_federal_states, get_counties
+from hm_requester import  hm_query, hm_set_db
 
 # author: Mario Schuetz
 #
@@ -10,6 +10,8 @@ from hm_requester import  hm_query
 
 app = Flask(__name__)
 CORS(app)
+open_db()
+hm_set_db(get_current_db())
 
 @app.route('/all_collections')
 def all_collections():
