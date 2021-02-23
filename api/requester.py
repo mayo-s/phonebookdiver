@@ -100,10 +100,9 @@ def get_search_range(start, end):
     if int(c[:4]) > int(end[:4]): continue
     elif int(c[:4]) == int(end[:4]) and int(c[6:]) > int(end[6:]): continue
     elif c[:4] < start[:4]: continue 
-    elif c[:4] == start[:4] and int(c[6:]) < int(end[6:]): continue
+    elif c[:4] == start[:4] and int(c[6:]) < int(start[6:]): continue
 
     range.append(c)
-
   return range
 
 def merge_dict_results(dict1, dict2):
