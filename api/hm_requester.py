@@ -8,16 +8,11 @@ import helper
 #
 # Process heatmap requests
 #
+db = None
 
-MONGO_URI = 'mongodb://127.0.0.1:27017'
-
-try:
-  client = MongoClient(MONGO_URI)
-  db = client.phonebookdiver
-except pymongo.errors.ConnectionFailure as err:
-  print(err)
-else:
-  print(f'CONNECTED to {MONGO_URI} {db.name}')
+def hm_set_db(database):
+  global db 
+  db = database
 
 # used for heatmap
 def hm_query(collection, key, value):
