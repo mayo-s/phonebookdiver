@@ -17,7 +17,12 @@ def log(type, msg):
 
 def processing_time(start, end):
     time_since = end - start
-    return str(time_since) + ' seconds'
+    return convert_time(time_since)
+
+def convert_time(time_value):
+    if time_value >= 5400: return str(time_value/3600) + ' hours'
+    elif time_value >= 180: return str(time_value/60) + ' minutes'
+    return str(time_value) + ' seconds'
 
 def get_all_collections(db):
   c = dict.fromkeys(db.list_collection_names(), 'name')
