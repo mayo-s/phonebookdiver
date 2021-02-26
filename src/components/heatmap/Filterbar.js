@@ -37,7 +37,7 @@ class Filterbar extends Component {
       this.setState({ queryMsg, loading: true })
       // TODO double check for empty search string
       let url = 'http://localhost:5000/hm_search?collection=' + this.state.collection + '&key=' + this.state.field + '&value=' + this.state.search_str;
-      if(this.state.use_regex) url += '&u_r=true';
+      if(this.state.use_regex) url += '&use_regex=true';
       fetch(url)
         .then(response => response.json())
         .then(data => {
@@ -135,7 +135,7 @@ class Filterbar extends Component {
             </div>
             <div>
               <label>
-                <input type="checkbox" class="filled-in" onChange={this.toggle_use_regex}/>
+                <input type="checkbox" className="filled-in" onChange={this.toggle_use_regex}/>
                 <span>Use Regex</span>
               </label>
             </div>
