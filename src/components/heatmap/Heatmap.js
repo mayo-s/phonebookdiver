@@ -15,19 +15,28 @@ class Heatmap extends Component {
     zoom: 11,
     radius: 10,
     blur: 14,
-    max: 0.1
+    max: 0.1,
+    maxIntensityValue: 0
   };
 
+  getMaxIntensityValue = () => {
+    let max = 0
+    for (let i of this.props.heatMapData.positions) {
+      if (max < i[2]) max = i[2]
+    }
+    this.setState.maxIntensityValue = max;
+    return max
+  }
+
   render() {
-    const position = [this.state.center.lat, this.state.center.lng];
+    const center_berlin = [this.state.center.lat, this.state.center.lng];
     const points = this.props.heatMapData.positions;
-    console.log(points)
+    const maxIntensityValue = this.getMaxIntensityValue
     const zoom = this.state.zoom;
     const radius = this.state.radius;
     const blur = this.state.blur;
     const max = this.state.max;
-    const gradient = // { 0.0: 'green', 0.5: 'yellow', 1.0: 'red'}
-    { 0.0: 'green', 0.2: '#FFFF33', 0.4: '#FFB266', 0.8: '#FF8000', 1.0: 'red' }
+    const gradient = { 0.0: 'green', 0.2: '#FFFF33', 0.4: '#FFB266', 0.6: '#FF9933', 0.8: '#FF8000', 1.0: '#FF3333' }
     // {
     //   0.1: '#89BDE0', 0.2: '#96E3E6', 0.4: '#82CEB6',
     //   0.6: '#FAF3A5', 0.8: '#F5D98B', 1.0: '#DE9A96'
@@ -35,7 +44,7 @@ class Heatmap extends Component {
 
     return (
 
-      <Map center={position} zoom={zoom}>
+      <Map center={center_berlin} zoom={zoom}>
         <HeatmapLayer
           fitBoundsOnLoad
           fitBoundsOnUpdate
@@ -43,11 +52,11 @@ class Heatmap extends Component {
           points={points}
           longitudeExtractor={m => m[1]}
           latitudeExtractor={m => m[0]}
-          intensityExtractor={m => parseFloat(m[2] * 10)} 
-          radius={radius} 
+          intensityExtractor={m => parseFloat(m[2]/maxIntensityValue * 10)}
+          radius={radius}
           blur={blur}
           max={max}
-          />
+        />
         <TileLayer
           attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

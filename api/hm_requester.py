@@ -57,27 +57,8 @@ def sort_results_by_zip_and_city(results):
         break
     if not found: 
       sorted_results.append({'address': address, 'zip': zip, 'city': city, 'area_code': area_code, 'count': 1})
-    
-  min_max = get_min_max(sorted_results)
-
-  sorted_results = normalize_count(sorted_results, float(min_max[0]), float(min_max[1]))
 
   return sorted_results
-
-def normalize_count(data, min, max):
-  for d in data:
-    value = d['count'] / max
-    d['count'] = float(value)
-  return data
-
-def get_min_max(list):
-  max = 0
-  min = sys.maxsize
-  for d in list:
-    value  = d['count']
-    if value < min: min = value
-    if value > max: max = value
-  return [min, max]
 
 def update_coords_collection(zip, city, area_code, coords):
   insert_obj = {}
