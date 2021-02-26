@@ -7,6 +7,7 @@ class Filterbar extends Component {
     cOptions: [],
     field: '',
     search_str: '',
+    use_regex: false,
 
     loading: false,
     queryMsg: '',
@@ -36,6 +37,7 @@ class Filterbar extends Component {
       this.setState({ queryMsg, loading: true })
       // TODO double check for empty search string
       let url = 'http://localhost:5000/hm_search?collection=' + this.state.collection + '&key=' + this.state.field + '&value=' + this.state.search_str;
+      if(this.state.use_regex) url += '&u_r=true';
       fetch(url)
         .then(response => response.json())
         .then(data => {
@@ -72,6 +74,10 @@ class Filterbar extends Component {
   update_queryMsg = (d_length) => {
     let queryMsg = this.state.queryMsg + ' Found ' + d_length + ' locations.';
     this.setState({ queryMsg, loading: false });
+  }
+
+  toggle_use_regex = () => {
+    this.state.use_regex = !this.state.use_regex;
   }
 
   createDropdown = () => {
@@ -122,10 +128,16 @@ class Filterbar extends Component {
               {this.state.sError ? (
                 <div className="err_msg">{this.state.sError}</div>
               ) : null}
-              </div>
+            </div>
             </div>
             <div className="input-field col s6 m3">
               <button className="btn center-align" >Search</button>
+            </div>
+            <div>
+              <label>
+                <input type="checkbox" class="filled-in" onChange={this.toggle_use_regex}/>
+                <span>Use Regex</span>
+              </label>
             </div>
           </form>
         </div>

@@ -22,15 +22,16 @@ def hm_search():
   collection = request.args.get('collection')
   # TODO: should already be checked on frontend!
   if collection is None:
-    return 'NO COLLECTION'
-  key = request.args.get('key')
-  if key is None:
-    return 'NO KEY'
-  value = request.args.get('value')
-  if value is None:
-    return 'NO VALUE'
+    return 'MISSING COLLECTION'
+  # key = request.args.get('key')
+  if request.args.get('key') is None or request.args.get('value') is None:
+    return 'MISSING KEY VALUE PAIR'
+  if request.args.get('use_regex'):
+    query = {request.args.get('key'): {'$regex': request.args.get('value')}}
+  else:
+    query = {request.args.get('key'): request.args.get('value')}
 
-  return jsonify(hm_query(collection, key, value))
+  return jsonify(hm_query(collection, query))
 
 @app.route('/federal_states')
 def federal_states():

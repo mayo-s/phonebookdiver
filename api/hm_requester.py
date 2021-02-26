@@ -15,10 +15,10 @@ def hm_set_db(database):
   db = database
 
 # used for heatmap
-def hm_query(collection, key, value):
+def hm_query(collection, query):
   start = time.time()
-  print(f'Searching for {value} in {collection, key}')
-  results = db[collection].find({key: value}, {'_id': 1, 'zip': 1, 'city': 1, 'area_code':1})
+  print(f'Searching for {query} in {collection}')
+  results = db[collection].find(query, {'_id': 1, 'zip': 1, 'city': 1, 'area_code':1})
   print(f'Found {results.count()} results')
   if results is None:
     return []
