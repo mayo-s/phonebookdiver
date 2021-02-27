@@ -16,7 +16,6 @@ class Heatmap extends Component {
     radius: 10,
     blur: 14,
     max: 0.1,
-    maxIntensityValue: 0
   };
 
   getMaxIntensityValue = () => {
@@ -24,23 +23,22 @@ class Heatmap extends Component {
     for (let i of this.props.heatMapData.positions) {
       if (max < i[2]) max = i[2]
     }
-    this.setState.maxIntensityValue = max;
     return max
   }
 
   render() {
     const center_berlin = [this.state.center.lat, this.state.center.lng];
     const points = this.props.heatMapData.positions;
-    const maxIntensityValue = this.getMaxIntensityValue
+    const maxIntensityValue = this.getMaxIntensityValue()
     const zoom = this.state.zoom;
     const radius = this.state.radius;
     const blur = this.state.blur;
     const max = this.state.max;
-    const gradient = { 0.0: 'green', 0.2: '#FFFF33', 0.4: '#FFB266', 0.6: '#FF9933', 0.8: '#FF8000', 1.0: '#FF3333' }
-    // {
-    //   0.1: '#89BDE0', 0.2: '#96E3E6', 0.4: '#82CEB6',
-    //   0.6: '#FAF3A5', 0.8: '#F5D98B', 1.0: '#DE9A96'
-    // };
+    const gradient = // { 0.0: 'green', 0.2: '#FFFF33', 0.4: '#FFB266', 0.6: '#FF9933', 0.8: '#FF8000', 1.0: '#FF3333' }
+    {
+      0.1: '#89BDE0', 0.2: '#96E3E6', 0.4: '#82CEB6',
+      0.6: '#FAF3A5', 0.8: '#F5D98B', 1.0: '#DE9A96'
+    };
 
     return (
 
