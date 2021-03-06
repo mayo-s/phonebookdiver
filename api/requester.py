@@ -100,10 +100,10 @@ def get_search_range(start, end):
   range = []
   for c in all_collections:
 
-    if int(c[:4]) > int(end[:4]): continue
-    elif int(c[:4]) == int(end[:4]) and int(c[6:]) > int(end[6:]): continue
+    if c[:4] > end[:4]: continue
+    elif c[:4] == end[:4] and c[6:] > end[6:]: continue
     elif c[:4] < start[:4]: continue 
-    elif c[:4] == start[:4] and int(c[6:]) < int(start[6:]): continue
+    elif c[:4] == start[:4] and c[6:] < start[6:]: continue
 
     range.append(c)
   return range
