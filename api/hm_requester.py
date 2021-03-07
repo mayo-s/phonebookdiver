@@ -21,7 +21,7 @@ def hm_query(collection, query):
   print(f'Searching for {query} in {collection}')
   results = db[collection].find(query, {'_id': 1, 'zip': 1, 'city': 1, 'area_code':1})
   print(f'Found {results.count()} results')
-  if results is None:
+  if results is None or results.count() <= 0:
     return []
   results = sort_results_by_zip_and_city(results)
   print('Geocoding...')
@@ -30,9 +30,12 @@ def hm_query(collection, query):
     zip = r.get('zip')
     city = r.get('city')
     area_code = r.get('area_code')
-    if zip is None and city is None: continue
+    if (zip and city) or zip:
+      coords = get_coords(zip, city, area_code)
+    elif area_code:
+      coords = get_coords_by_area_code(area_code)
+    else: continue
     # TODO add count to coords
-    coords = get_coords(zip, city, area_code)
     if coords is None: 
       continue
     coords.append(r.get('count'))
@@ -76,7 +79,7 @@ def get_coords(zip, city, area_code):
   if zip: query['zip'] = zip
   if city: query['city'] = city
   coords = db['geodata'].find_one(query,  {'coordinates': 1})
-  if coords is not None: return coords.get('coordinates')
+  if coords: return coords.get('coordinates')
   else:
     if zip is None: zip = ''
     if city is None: city = ''
@@ -97,9 +100,15 @@ def get_coords(zip, city, area_code):
       if api_coords != api_coords:
         print(f'NaN {zip} {city}')
         return None
-      if api_coords is not None:
+      if api_coords:
         update_coords_collection(zip, city, area_code, api_coords)
         return api_coords
       print(f'None {zip} {city}')
 
+  return None
+
+def get_coords_by_area_code(area_code):
+  coords =  db['geodata'].find_one({'area_code': area_code},  {'coordinates': 1})
+  if coords:
+    return coords.get('coordinates')
   return None
