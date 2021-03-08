@@ -32,7 +32,7 @@ def hm_query(collection, query):
     area_code = r.get('area_code')
     if (zip and city) or zip:
       coords = get_coords(zip, city, area_code)
-    elif area_code:
+    elif valid_area_code(area_code):
       coords = get_coords_by_area_code(area_code)
     else: continue
     # TODO add count to coords
@@ -51,10 +51,11 @@ def sort_results_by_zip_and_city(results):
     zip = r.get('zip')
     city = r.get('city')
     area_code = r.get('area_code')
+    if not area_code: area_code = ''
     address = f'{zip} {city} Deutschland'
     found = False
     for sr in sorted_results:
-      if address == sr.get('address'):
+      if (address + area_code).lower().__hash__() == (sr.get('address') + sr.get('area_code')).lower().__hash__():
         sr['count'] = sr.get('count') + 1
         found = True
         break
@@ -81,7 +82,8 @@ def get_coords(zip, city, area_code):
   coords = db['geodata'].find_one(query,  {'coordinates': 1})
   if coords: return coords.get('coordinates')
   else:
-    if zip is None: zip = ''
+    # TODO double checked?
+    if zip is None: return None
     if city is None: city = ''
     query_str = f'https://nominatim.openstreetmap.org/search.php?countrycode=de&q={zip}%20{city}%20Deutschland&format=jsonv2'
     response = requests.get(query_str)
@@ -101,7 +103,8 @@ def get_coords(zip, city, area_code):
         print(f'NaN {zip} {city}')
         return None
       if api_coords:
-        update_coords_collection(zip, city, area_code, api_coords)
+        if valid_area_code(area_code):
+          update_coords_collection(zip, city, area_code, api_coords)
         return api_coords
       print(f'None {zip} {city}')
 
@@ -112,3 +115,10 @@ def get_coords_by_area_code(area_code):
   if coords:
     return coords.get('coordinates')
   return None
+
+def valid_area_code(area_code):
+  ignore = ['0310', '0311', '032', '0700', '0701', '0800', '0801', '0900', '0901', '0902', '0903', '0904', '0905']
+  if area_code is None: return False
+  elif area_code in ignore: return False
+  elif area_code[:2] == '01': return False
+  return True
