@@ -9,21 +9,7 @@ import helper
 # Process api requests
 #
 
-MONGO_URI = 'mongodb://127.0.0.1:27017'
-db = None
-
-def open_db():
-  try:
-    client = pymongo.MongoClient(MONGO_URI)
-    global db
-    db = client.phonebookdiver
-  except pymongo.errors.ConnectionFailure as err:
-    print(err)
-  else:
-    print(f'CONNECTED to {MONGO_URI} {db.name}')
-
-def get_current_db():
-  return db
+db = helper.connect_db('Search')
 
 def get_all_collections():
   return helper.get_all_collections(db)
@@ -50,6 +36,7 @@ def search_colls(range, query_values):
     return results
   
   results = []
+  # TODO refactor - minimze loops
   for c in c_range:
 
     response = db[c].find(query_values)

@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from requester import open_db, get_current_db, get_all_collections, search_colls, fetch_details_by_id, get_federal_states, get_counties
-from hm_requester import  hm_query, hm_set_db
+from requester import get_all_collections, search_colls, fetch_details_by_id, get_federal_states, get_counties
+from hm_requester import  hm_query
 
 # author: Mario Schuetz
 #
@@ -10,8 +10,6 @@ from hm_requester import  hm_query, hm_set_db
 
 app = Flask(__name__)
 CORS(app)
-open_db()
-hm_set_db(get_current_db())
 
 @app.route('/all_collections')
 def all_collections():
@@ -23,7 +21,6 @@ def hm_search():
   # TODO: should already be checked on frontend!
   if collection is None:
     return 'MISSING COLLECTION'
-  # key = request.args.get('key')
   if request.args.get('key') is None or request.args.get('value') is None:
     return 'MISSING KEY VALUE PAIR'
   if request.args.get('use_regex'):

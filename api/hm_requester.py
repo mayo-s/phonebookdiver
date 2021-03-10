@@ -1,6 +1,5 @@
 import sys
 import pymongo
-from pymongo import MongoClient
 import time
 import requests
 import helper
@@ -9,20 +8,17 @@ import helper
 #
 # Process heatmap requests
 #
-db = None
-
-def hm_set_db(database):
-  global db 
-  db = database
+db = helper.connect_db('Heatmap')
 
 # used for heatmap
 def hm_query(collection, query):
   start = time.time()
   print(f'Searching for {query} in {collection}')
-  results = db[collection].find(query, {'_id': 1, 'zip': 1, 'city': 1, 'area_code':1})
-  print(f'Found {results.count()} results')
-  if results is None or results.count() <= 0:
+  results = list(db[collection].find(query, {'_id': 1, 'zip': 1, 'city': 1, 'area_code':1}))
+  if results is None or len(results) <= 0:
+    print('Found 0 results')
     return []
+  print(f'Found {len(results)} results')
   results = sort_results_by_zip_and_city(results)
   print('Geocoding...')
   geo_list = []
@@ -35,7 +31,6 @@ def hm_query(collection, query):
     elif valid_area_code(area_code):
       coords = get_coords_by_area_code(area_code)
     else: continue
-    # TODO add count to coords
     if coords is None: 
       continue
     coords.append(r.get('count'))
@@ -117,7 +112,7 @@ def get_coords_by_area_code(area_code):
   return None
 
 def valid_area_code(area_code):
-  ignore = ['0310', '0311', '032', '0700', '0701', '0800', '0801', '0900', '0901', '0902', '0903', '0904', '0905']
+  ignore = ['0310', '0311', '032', '0700', '0701', '0800', '0801', '0900', '09001', '09002', '09003', '09004', '09005']
   if area_code is None: return False
   elif area_code in ignore: return False
   elif area_code[:2] == '01': return False
