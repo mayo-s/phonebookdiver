@@ -32,7 +32,7 @@ const Imprint = () => {
           <div className="card z-depth-0 section">
             <div className="card-content grey-text text-darken-3">
               <span className="card-title">PROJECT IMPLEMENTATION</span>
-              <span className="card-content">Project implementation by Mario Schütz (Berlin University of Applied Sciences) in the context of an independent coursework and subsequent master thesis.</span>
+              <span className="card-content">Project implementation by Mario Schütz (University of Applied Sciences Berlin, International Media and Computing) in the context of an independent coursework and subsequent master thesis.</span>
             </div>
           </div>
           <div className="card z-depth-0 section">
