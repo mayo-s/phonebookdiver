@@ -9,8 +9,11 @@ Special credits to Prof. Weber-Wulff of the University of Applied Sciences Berli
 ## License
 Unless otherwise stated, this project is licensed under CC-BY 4.0.
 
-## Setup instructions  
+## Setup instructions 
 (using terminal - follow on your own risk ;-) )  
+
+These steps must be performed separately for each tool.  
+These folders are api/, jupyter/ and tools/.  
   
 ( - install python3 if not already done `> brew install python`)  
 ( - or upgrade current version `> brew upgrade python`)  
