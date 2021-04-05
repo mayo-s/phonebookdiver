@@ -34,9 +34,9 @@ class Heatmap extends Component {
     const radius = this.state.radius;
     const blur = this.state.blur;
     const max = this.state.max;
-    const gradient = // { 0.0: 'green', 0.2: '#FFFF33', 0.4: '#FFB266', 0.6: '#FF9933', 0.8: '#FF8000', 1.0: '#FF3333' }
+    const gradient = // { 0.1: 'green', 0.2: '#FFFF33', 0.4: '#FFB266', 0.6: '#FF9933', 0.8: '#FF8000', 1.0: '#FF3333' }
     {
-      0.1: '#89BDE0', 0.2: '#96E3E6', 0.4: '#82CEB6',
+      0.1: 'darkblue', 0.2: '#96E3E6', 0.4: '#82CEB6',
       0.6: '#FAF3A5', 0.8: '#F5D98B', 1.0: '#DE9A96'
     };
 
