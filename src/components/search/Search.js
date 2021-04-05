@@ -32,7 +32,6 @@ class Search extends Component {
   }
 
   handleChange = (e) => {
-    console.log(e.target.id + ': ' + e.target.value)
     this.setState({
       [e.target.id]: e.target.value
     });
@@ -53,7 +52,6 @@ class Search extends Component {
       let url = 'http://localhost:5000/search?start=' + this.state.collection_start + '&end=' + this.state.collection_end + '&frst_key=' + this.state.frst_key + '&frst_value=' + this.state.frst_value;
       if (this.state.scnd_value !== '') url += '&scnd_key=' + this.state.scnd_key + '&scnd_value=' + this.state.scnd_value;
       if (this.state.thrd_value !== '') url += '&thrd_key=' + this.state.thrd_key + '&thrd_value=' + this.state.thrd_value;
-      console.log(url);
       fetch(url)
         .then(response => response.json())
         .then(data => this.update_resultView(data));
@@ -193,7 +191,6 @@ class Search extends Component {
 
   render() {
     if (!this.state.cOptions.length) this.getCollections();
-    console.log(this.state)
     return (
       <div className='dashboard'>
         {this.state.overlay ? (this.state.overlay) : null}
