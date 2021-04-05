@@ -20,6 +20,10 @@ body {
     padding-top: 14px;
 }
 
+.imprint-align{
+    margin-left: 200px;
+}
+
 code {
     font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }

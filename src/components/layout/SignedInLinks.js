@@ -9,8 +9,8 @@ const SignedInLinks = () => {
         <li><NavLink to='/heatmap'>Heatmap</NavLink></li>
         <li><NavLink to='/search'>Search</NavLink></li>
         {/* <li><NavLink to='/createProject'>Create Card</NavLink></li> */}
-        <li><NavLink to='/'>Imprint</NavLink></li>
-        <li><NavLink to='/'>Logout</NavLink></li>
+        <li><NavLink to='/imprint'>Imprint</NavLink></li>
+        {/* <li><NavLink to='/'>Logout</NavLink></li> */}
 
       </ul>
     </div>

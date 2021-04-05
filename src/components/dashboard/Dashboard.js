@@ -12,7 +12,7 @@ class Dashboard extends Component {
             <ProjectList projects={this.props.projects} />
           </div>
           <div className="col s12 m5 offset-m1">
-            <Notifications />
+            {/* <Notifications /> */}
           </div>
         </div>
       </div>

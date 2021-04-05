@@ -8,6 +8,7 @@ import ProjectDetails from './components/projects/ProjectDetails';
 import SignIn from './components/auth/SignIn';
 import SignUp from './components/auth/SignUp';
 import CreateProject from './components/projects/CreateProject';
+import Imprint from './components/dashboard/Imprint';
 
 
 function App() {
@@ -23,7 +24,7 @@ function App() {
           <Route path='/signin' component={SignIn} />
           <Route path='/signup' component={SignUp} />
           <Route path='/createProject' component={CreateProject} />
-          {/* <Route path='/imprint' component={Imprint} /> */}
+          <Route path='/imprint' component={Imprint} />
         </Switch>
       </div>
     </BrowserRouter>
