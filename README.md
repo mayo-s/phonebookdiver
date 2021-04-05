@@ -1,6 +1,13 @@
 # Phone Book Diver  
 ### Visualizing phonebook data
  
+The project The Phone Book Diver provides several tools to analyze and visualize data from 25 years of public German telephone books. These tools can be used to display the distribution of names on a heatmap, search and merge the data across multiple editions, and perform further analysis using a Jupyter Notebook.
+
+## Thank you
+Special credits to Prof. Weber-Wulff of the University of Applied Sciences Berlin and Erdgeist for the project support and the provision of the telephone book data.
+
+## License
+Unless otherwise stated, this project is licensed under CC-BY 4.0.
 
 ## Setup instructions  
 (using terminal - follow on your own risk ;-) )  
@@ -13,7 +20,6 @@
 - install requirements `> pip install -r requirements`  
 
 - when done working - deactivate virtual environment `> deactivate`  
-
 
 
 
