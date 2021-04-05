@@ -5,6 +5,9 @@ import Dashboard from './components/dashboard/Dashboard';
 import Map from './components/heatmap/Map';
 import Search from './components/search/Search';
 import ProjectDetails from './components/projects/ProjectDetails';
+import SignIn from './components/auth/SignIn';
+import SignUp from './components/auth/SignUp';
+
 
 function App() {
   return (
@@ -16,6 +19,8 @@ function App() {
           <Route path='/heatmap' component={Map} />
           <Route path='/search' component={Search} />
           <Route path='/project/:id' component={ProjectDetails} />
+          <Route path='/signin' component={SignIn} />
+          <Route path='/signup' component={SignUp} />
           {/* <Route path='/imprint' component={Imprint} /> */}
         </Switch>
       </div>
