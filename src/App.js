@@ -4,6 +4,7 @@ import Navbar from './components/layout/Navbar';
 import Dashboard from './components/dashboard/Dashboard';
 import Map from './components/heatmap/Map';
 import Search from './components/search/Search';
+import ProjectDetails from './components/projects/ProjectDetails';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route exact path='/' component={Dashboard} />
           <Route path='/heatmap' component={Map} />
           <Route path='/search' component={Search} />
+          <Route path='/project/:id' component={ProjectDetails} />
           {/* <Route path='/imprint' component={Imprint} /> */}
         </Switch>
       </div>
