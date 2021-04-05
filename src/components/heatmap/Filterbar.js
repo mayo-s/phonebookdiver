@@ -77,7 +77,7 @@ class Filterbar extends Component {
   }
 
   toggle_use_regex = () => {
-    this.state.use_regex = !this.state.use_regex;
+    this.setState({use_regex: !this.state.use_regex});
   }
 
   createDropdown = () => {
