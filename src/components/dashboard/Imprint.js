@@ -26,7 +26,7 @@ const Imprint = () => {
           <div className="card z-depth-0 section">
             <div className="card-content grey-text text-darken-3">
               <span className="card-title">SPECIAL CREDITS</span>
-              <span className="card-content">Special credits to Prof. Weber-Wulff from the University of Applied Sciences Berlin and Erdgeist for the project support and the provision of the telephone book data.</span>
+              <span className="card-content">Special credit to Prof. Weber-Wulff of the University of Applied Sciences Berlin and Erdgeist for project supervision, support and provision of the telephone book data.</span>
             </div>
           </div>
           <div className="card z-depth-0 section">
