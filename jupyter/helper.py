@@ -75,3 +75,9 @@ def create_index_on_fields(db, collections, field_names):
     # 5152.3292899131775 seconds [area_code] (85 minutes)
     # 4967.730529785156 seconds , #2 '4937.383540868759 seconds' [zip]
     # 5070.640741109848 seconds [city]
+
+def value_counts_from_df(collection, df, values):
+    val_counts_df = pd.DataFrame(df.value_counts(values))
+    value_counts_df = val_counts_df.reset_index()
+    value_counts_df.columns = [f'unique_{values[0]}', 'count']
+    return value_counts_df
