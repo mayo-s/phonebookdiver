@@ -1,4 +1,5 @@
 import sys
+import threading
 import pymongo
 import time
 import requests
@@ -9,6 +10,14 @@ import helper
 # Process heatmap requests
 #
 db = helper.connect_db('Heatmap')
+# Nominatim usage policy requires an identifying User-Agent with contact info
+NOMINATIM_HEADERS = {'User-Agent': 'phonebookdiver/1.0 (https://github.com/mayo-s/phonebookdiver)'}
+NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search.php'
+NOMINATIM_TIMEOUT = 10  # seconds
+# Nominatim usage policy allows at most one request per second
+NOMINATIM_MIN_INTERVAL = 1.0  # seconds
+last_nominatim_request = 0.0
+nominatim_lock = threading.Lock()  # flask serves requests in parallel threads
 
 # used for heatmap
 def hm_query(collection, query):
@@ -80,9 +89,7 @@ def get_coords(zip, city, area_code):
     # TODO double checked?
     if zip is None: return None
     if city is None: city = ''
-    query_str = f'https://nominatim.openstreetmap.org/search.php?countrycode=de&q={zip}%20{city}%20Deutschland&format=jsonv2'
-    response = requests.get(query_str)
-    response = response.json()
+    response = request_nominatim(zip, city)
 
     # TODO double check if values in bounds of Germany
     # North: 55.0583° N, 8.4165° E  (> 55.1)
@@ -104,6 +111,34 @@ def get_coords(zip, city, area_code):
       print(f'None {zip} {city}')
 
   return None
+
+def wait_for_nominatim_slot() -> None:
+  global last_nominatim_request
+  with nominatim_lock:
+    wait = NOMINATIM_MIN_INTERVAL - (time.monotonic() - last_nominatim_request)
+    if wait > 0:
+      time.sleep(wait)
+    last_nominatim_request = time.monotonic()
+
+# returns the list of Nominatim results, or [] if the request failed
+def request_nominatim(zip: str, city: str) -> list:
+  wait_for_nominatim_slot()
+  query_str = f'{NOMINATIM_URL}?countrycode=de&q={zip}%20{city}%20Deutschland&format=jsonv2'
+  try:
+    response = requests.get(query_str, headers=NOMINATIM_HEADERS, timeout=NOMINATIM_TIMEOUT)
+    response.raise_for_status()
+    results = response.json()
+  except requests.RequestException as err:
+    msg = f'Nominatim request failed for {zip} {city}: {err}'
+    helper.log('WARNING', msg)
+    print(msg)
+    return []
+  if not isinstance(results, list):
+    msg = f'Unexpected Nominatim response for {zip} {city}: {results}'
+    helper.log('WARNING', msg)
+    print(msg)
+    return []
+  return results
 
 def get_coords_by_area_code(area_code):
   coords =  db['geodata'].find_one({'area_code': area_code},  {'coordinates': 1})

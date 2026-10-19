@@ -51,7 +51,7 @@ def send_to_db(collection, phonebook):
       stop = len(phonebook) - 1
     entries = phonebook[start:stop]
     resp = insert_entries(entries, collection)
-    if resp is 'FAILED':
+    if resp == 'FAILED':
       print(f'Insert failed {collection} at {start}/{stop}')
       continue
     i += 1000

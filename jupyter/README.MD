@@ -6,11 +6,8 @@ It provides various snippets to tackle specific problems and gather more insight
 
 How to use (short intro):
 
-1. create and start venv  
-`> python -m venv .env --copies`  
-`> start .env/bin/activate`  
-2. install requierements with pip  
-`> pip install -r requierements`  
-3. start  
-`> jupyter notebook`  
+1. install the notebook dependencies with pipenv (Pipfile in project root)  
+`> pipenv install --categories="packages notebook"`  
+2. start from within jupyter/  
+`> pipenv run jupyter notebook`  
 

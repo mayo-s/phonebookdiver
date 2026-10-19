@@ -12,18 +12,15 @@ Unless otherwise stated, this project is licensed under CC-BY 4.0.
 ## Setup instructions 
 (using terminal - follow on your own risk ;-) )  
 
-These steps must be performed separately for each tool.  
-These folders are api/, jupyter/ and tools/.  
+Python dependencies for api/, tools/ and jupyter/ are managed with [pipenv](https://pipenv.pypa.io) in a single `Pipfile` at the project root.  
   
-( - install python3 if not already done `> brew install python`)  
-( - or upgrade current version `> brew upgrade python`)  
+( - install python 3.14 and pipenv if not already done `> brew install python@3.14 pipenv`)  
 - move to your project directory `> cd "path/projectName"`  
-- create virtual environment within project directory `> python3 -m venv .env --copies`  
-- activate virtual environment `> source .env/bin/activate`  
-- install requirements `> pip install -r requirements`  
+- install dependencies for api/ and tools/ `> pipenv install --dev`  
+- additionally install the jupyter/ dependencies `> pipenv install --categories="packages notebook"`  
 
-- when done working - deactivate virtual environment `> deactivate`  
-
+- run a single command in the environment, e.g. `> cd tools && pipenv run python main.py`  
+- or open a shell within the environment `> pipenv shell` (leave it with `> exit`)  
 
 
 ## React-App

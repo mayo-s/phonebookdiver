@@ -1,7 +1,0 @@
-flask
-flask-PyMongo
-flask_cors
-mongoengine
-python-dotenv
-requests
-geopy

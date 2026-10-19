@@ -16,7 +16,7 @@ class ResultTable extends Component {
 
           if(h === 'edition') return (<td>
             {result.edition.map((a) => {
-              return (<a onClick={() => this.fetch_details(a)}>{a.substr(0,7)} </a>)
+              return (<button type="button" className="link-button" onClick={() => this.fetch_details(a)}>{a.substr(0,7)} </button>)
             })}
           </td>)
 

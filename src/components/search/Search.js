@@ -243,7 +243,7 @@ class Search extends Component {
               </div>
               {!this.state.scnd_parameter ? (
                 <div>
-                  <a className="btn-floating btn-small center-align" onClick={this.scndParameter}><i className="material-icons">add</i></a>
+                  <button type="button" className="btn-floating btn-small center-align" onClick={this.scndParameter}><i className="material-icons">add</i></button>
                 </div>) : null}
             </div>
 
@@ -272,10 +272,10 @@ class Search extends Component {
                 </div>
                 <div>
                   {this.state.scnd_parameter ? (
-                    <a className="btn-floating btn-small center-align" onClick={this.scndParameter}><i className="material-icons">remove</i></a>
+                    <button type="button" className="btn-floating btn-small center-align" onClick={this.scndParameter}><i className="material-icons">remove</i></button>
                   ) : null}
                   {!this.state.thrd_parameter ? (
-                    <a className="btn-floating btn-small center-align" onClick={this.thrdParameter}><i className="material-icons">add</i></a>
+                    <button type="button" className="btn-floating btn-small center-align" onClick={this.thrdParameter}><i className="material-icons">add</i></button>
                   ) : null}
                 </div>
               </div>
@@ -306,7 +306,7 @@ class Search extends Component {
                 </div>
                 {this.state.thrd_parameter ? (
                   <div>
-                    <a className="btn-floating btn-small center-align" onClick={this.thrdParameter}><i className="material-icons">remove</i></a>
+                    <button type="button" className="btn-floating btn-small center-align" onClick={this.thrdParameter}><i className="material-icons">remove</i></button>
                   </div>) : null}
               </div>
             ) : null}

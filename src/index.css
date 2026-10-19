@@ -95,3 +95,12 @@ table {
     color: red;
     white-space: nowrap;
   }
+/* button that looks like a link, for clickable text without a target URL */
+.link-button{
+    background: none;
+    border: none;
+    padding: 0;
+    color: #039be5;
+    cursor: pointer;
+    font: inherit;
+}
