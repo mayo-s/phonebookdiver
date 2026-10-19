@@ -47,7 +47,7 @@ In no way can the author be held responsible for incorrect information or damage
           <div className="card z-depth-0 section">
             <div className="card-content grey-text text-darken-3">
               <span className="card-title">LICENSE</span>
-              <span className="card-content">Unless otherwise stated, this project is licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank">CC-BY 4.0.</a></span>
+              <span className="card-content">Unless otherwise stated, this project is licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC-BY 4.0.</a></span>
             </div>
           </div>
         </div>
