@@ -1,0 +1,35 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+# api/ and tools/
+
+[packages]
+flask = "*"
+flask-cors = "*"
+python-dotenv = "*"
+pymongo = "<4"
+requests = "*"
+
+# jupyter/ - install with `pipenv install --categories="packages notebook"`
+
+[notebook]
+jupyter = "*"
+# jupyter_contrib_nbextensions does not support Notebook 7
+notebook = "<7"
+jupyter-contrib-nbextensions = "*"
+numpy = "*"
+pandas = "*"
+matplotlib = "*"
+# jupyter_contrib_nbextensions needs pkg_resources, removed in setuptools 81
+setuptools = "<81"
+
+[dev-packages]
+flake8 = "*"
+radon = "*"
+flake8-annotations = "*"
+pdbpp = "*"
+
+[requires]
+python_version = "3.14"
