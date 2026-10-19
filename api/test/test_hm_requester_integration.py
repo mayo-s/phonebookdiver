@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 import pymongo
 import pytest
+import requests
 
 import helper
 import hm_requester
@@ -99,13 +100,13 @@ def test_consecutive_real_requests_are_sent_at_least_one_second_apart(monkeypatc
     assert first != [] and second != []
 
 
-def test_unreachable_server_returns_empty_list(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_unreachable_server_returns_none(monkeypatch: pytest.MonkeyPatch) -> None:
     # .invalid never resolves (RFC 2606), so this triggers a real connection error.
     monkeypatch.setattr(hm_requester, 'NOMINATIM_URL', 'https://nominatim.invalid/search.php')
 
     results = hm_requester.request_nominatim('19260', 'Marsow')
 
-    assert results == []
+    assert results is None
 
 
 def test_ensure_geodata_indexes_creates_indexes_in_mongodb(mongo_test_db: pymongo.database.Database) -> None:
@@ -287,15 +288,19 @@ def test_hm_query_groups_search_in_one_aggregation(
 
 
 class FakeNominatim:
-    """Answers every request with Marsow's coordinates and counts the requests."""
+    """Counts requests; answers with Marsow's coordinates unless results or error are changed."""
 
     def __init__(self) -> None:
         self.requests = 0
+        self.results = [{'lat': '53.4242109', 'lon': '10.9311292'}]
+        self.error = None
 
     def get(self, *args: object, **kwargs: object) -> MagicMock:
         self.requests += 1
+        if self.error:
+            raise self.error
         response = MagicMock()
-        response.json.return_value = [{'lat': '53.4242109', 'lon': '10.9311292'}]
+        response.json.return_value = self.results
         return response
 
 
@@ -374,3 +379,93 @@ def test_get_coords_saves_real_nominatim_result_in_mongodb(mongo_test_db: pymong
 
     assert geodata_entries(mongo_test_db, '19260') == [{'zip': '19260', 'city': 'Marsow', 'coordinates': coords}]
     assert coords == pytest.approx([53.42, 10.93], abs=0.05)
+
+
+def not_found_entries(db: pymongo.database.Database) -> list:
+    return list(db[hm_requester.NOT_FOUND].find({}, {'_id': 0, 'checked': 0}))
+
+
+def test_unknown_place_is_saved_as_not_found(
+        mongo_test_db: pymongo.database.Database, fake_nominatim: FakeNominatim) -> None:
+    fake_nominatim.results = []
+
+    hm_requester.get_coords('91541', 'Rothenburg o d Tauber', '09861')
+
+    assert not_found_entries(mongo_test_db) == [{'zip': '91541', 'city': 'Rothenburg o d Tauber'}]
+    assert mongo_test_db[hm_requester.NOT_FOUND].find_one()['checked'] is not None
+    assert geodata_entries(mongo_test_db, '91541') == []
+
+
+def test_not_found_place_is_not_requested_again(
+        mongo_test_db: pymongo.database.Database, fake_nominatim: FakeNominatim) -> None:
+    fake_nominatim.results = []
+    hm_requester.get_coords('91541', 'Rothenburg o d Tauber', '09861')
+
+    coords = hm_requester.get_coords('91541', 'Rothenburg o d Tauber', '0171')
+
+    assert coords is None
+    assert fake_nominatim.requests == 1
+
+
+def test_temporary_failure_is_retried_on_next_search(
+        mongo_test_db: pymongo.database.Database, fake_nominatim: FakeNominatim) -> None:
+    fake_nominatim.error = requests.ConnectionError('no route to host')
+    hm_requester.get_coords('19260', 'Marsow', '038852')
+    fake_nominatim.error = None
+
+    coords = hm_requester.get_coords('19260', 'Marsow', '038852')
+
+    assert coords == [53.4242109, 10.9311292]
+    assert fake_nominatim.requests == 2
+    assert not_found_entries(mongo_test_db) == []
+
+
+def test_not_found_place_is_saved_once(mongo_test_db: pymongo.database.Database) -> None:
+    hm_requester.ensure_geodata_indexes()
+    hm_requester.save_not_found('91541', 'Rothenburg o d Tauber')
+
+    hm_requester.save_not_found('91541', 'Rothenburg o d Tauber')
+
+    assert not_found_entries(mongo_test_db) == [{'zip': '91541', 'city': 'Rothenburg o d Tauber'}]
+
+
+def test_not_found_index_is_unique(mongo_test_db: pymongo.database.Database) -> None:
+    hm_requester.ensure_geodata_indexes()
+    mongo_test_db[hm_requester.NOT_FOUND].insert_one({'zip': '91541', 'city': 'Rothenburg o d Tauber'})
+
+    with pytest.raises(pymongo.errors.DuplicateKeyError):
+        mongo_test_db[hm_requester.NOT_FOUND].insert_one({'zip': '91541', 'city': 'Rothenburg o d Tauber'})
+
+
+def test_second_heatmap_search_skips_not_found_places(
+        mongo_test_db: pymongo.database.Database, fake_nominatim: FakeNominatim, command_log: CommandLog) -> None:
+    fake_nominatim.results = []
+    mongo_test_db['2005_Q1'].insert_many([
+        {'lastname': 'Schütz', 'zip': '91541', 'city': 'Rothenburg o d Tauber', 'area_code': '09861'},
+        {'lastname': 'Schütz', 'zip': '91541', 'city': 'Rothenburg o d Tauber', 'area_code': '0171'},
+    ])
+    hm_requester.hm_query('2005_Q1', {'lastname': 'Schütz'})
+    command_log.commands.clear()
+
+    positions = hm_requester.hm_query('2005_Q1', {'lastname': 'Schütz'})
+
+    assert positions == []
+    assert fake_nominatim.requests == 1  # first search only, once per zip + city
+    assert command_log.finds_on(hm_requester.NOT_FOUND) == 1  # loaded with the cache, no single lookups
+
+
+def test_not_found_collection_is_not_listed_as_phonebook(mongo_test_db: pymongo.database.Database) -> None:
+    mongo_test_db['2005_Q1'].insert_one({'lastname': 'Schütz'})
+    hm_requester.save_coords('19260', 'Marsow', '038852', [53.4242109, 10.9311292])
+    hm_requester.save_not_found('91541', 'Rothenburg o d Tauber')
+
+    collections = helper.get_all_collections(mongo_test_db)
+
+    assert list(collections) == ['2005_Q1']
+
+
+def test_real_nominatim_unknown_place_is_saved_as_not_found(mongo_test_db: pymongo.database.Database) -> None:
+    coords = hm_requester.get_coords('00000', 'Gibtesnichthausen', '09861')
+
+    assert coords is None
+    assert not_found_entries(mongo_test_db) == [{'zip': '00000', 'city': 'Gibtesnichthausen'}]

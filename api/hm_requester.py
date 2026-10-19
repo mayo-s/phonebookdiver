@@ -1,4 +1,5 @@
 import math
+from datetime import datetime, timezone
 import threading
 import pymongo
 import time
@@ -14,12 +15,14 @@ NOMINATIM_TIMEOUT = 10  # seconds
 NOMINATIM_MIN_INTERVAL = 1.0  # seconds
 last_nominatim_request = 0.0
 nominatim_lock = threading.Lock()  # flask serves requests in parallel threads
+NOT_FOUND = 'geodata_not_found'
 
 
 def ensure_geodata_indexes() -> None:
     try:
         db['geodata'].create_index([('zip', pymongo.ASCENDING), ('city', pymongo.ASCENDING)])
         db['geodata'].create_index('area_code')
+        db[NOT_FOUND].create_index([('zip', pymongo.ASCENDING), ('city', pymongo.ASCENDING)], unique=True)
     except pymongo.errors.PyMongoError as err:
         msg = f'Could not create geodata indexes, heatmap lookups will be slow: {err}'
         helper.log('WARNING', msg)
@@ -86,6 +89,8 @@ def load_cached_places(zips: set) -> dict:
     for doc in db['geodata'].find({'zip': {'$in': list(zips)}}, {'_id': 0, 'zip': 1, 'city': 1, 'coordinates': 1}):
         places.setdefault((doc.get('zip'), doc.get('city')), doc.get('coordinates'))
         places.setdefault((doc.get('zip'), None), doc.get('coordinates'))
+    for doc in db[NOT_FOUND].find({'zip': {'$in': list(zips)}}, {'_id': 0, 'zip': 1, 'city': 1}):
+        places.setdefault((doc.get('zip'), doc.get('city')), None)
     return places
 
 
@@ -127,14 +132,22 @@ def save_coords(zip: str, city: str | None, area_code: str | None, coords: list)
     new_fields = {'coordinates': coords}
     if valid_area_code(area_code):
         new_fields['area_code'] = area_code
+    upsert_place('geodata', place, new_fields)
+
+
+def save_not_found(zip: str, city: str | None) -> None:
+    upsert_place(NOT_FOUND, place_query(zip, city), {'checked': datetime.now(timezone.utc)})
+
+
+def upsert_place(collection: str, place: dict, new_fields: dict) -> None:
     try:
-        db['geodata'].update_one(place, {'$setOnInsert': new_fields}, upsert=True)
+        db[collection].update_one(place, {'$setOnInsert': new_fields}, upsert=True)
     except pymongo.errors.PyMongoError as err:
-        msg = f'Could not save coordinates for {zip} {city}: {err}'
+        msg = f'Could not save {place} to {collection}: {err}'
         helper.log('WARNING', msg)
         print(msg)
         return
-    helper.log('INFO', f'Saved to geodata {place} {new_fields}')
+    helper.log('INFO', f'Saved to {collection} {place} {new_fields}')
 
 
 def parse_nominatim_coords(results: list) -> list | None:
@@ -161,9 +174,19 @@ def get_coords(zip: str | None, city: str | None, area_code: str | None) -> list
     cached = db['geodata'].find_one(place_query(zip, city), {'coordinates': 1})
     if cached:
         return cached.get('coordinates')
-    coords = parse_nominatim_coords(request_nominatim(zip, city or ''))
+    if db[NOT_FOUND].find_one(place_query(zip, city), {'_id': 1}):
+        return None
+    return resolve_with_nominatim(zip, city, area_code)
+
+
+def resolve_with_nominatim(zip: str, city: str | None, area_code: str | None) -> list | None:
+    results = request_nominatim(zip, city or '')
+    if results is None:
+        return None
+    coords = parse_nominatim_coords(results)
     if coords is None:
         print(f'None {zip} {city}')
+        save_not_found(zip, city)
         return None
     save_coords(zip, city, area_code, coords)
     return coords
@@ -178,8 +201,8 @@ def wait_for_nominatim_slot() -> None:
         last_nominatim_request = time.monotonic()
 
 
-def request_nominatim(zip: str, city: str) -> list:
-    """Returns [] on any failure, so one unresolved place doesn't break the whole heatmap."""
+def request_nominatim(zip: str, city: str) -> list | None:
+    """Returns None on failure and [] if Nominatim knows no such place; only the latter is worth remembering."""
     wait_for_nominatim_slot()
     query_str = f'{NOMINATIM_URL}?countrycode=de&q={zip}%20{city}%20Deutschland&format=jsonv2'
     try:
@@ -190,12 +213,12 @@ def request_nominatim(zip: str, city: str) -> list:
         msg = f'Nominatim request failed for {zip} {city}: {err}'
         helper.log('WARNING', msg)
         print(msg)
-        return []
+        return None
     if not isinstance(results, list):
         msg = f'Unexpected Nominatim response for {zip} {city}: {results}'
         helper.log('WARNING', msg)
         print(msg)
-        return []
+        return None
     return results
 
 

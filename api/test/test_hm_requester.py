@@ -85,37 +85,37 @@ def test_request_nominatim_sets_timeout(nominatim: MagicMock) -> None:
     requests.ConnectionError('no route to host'),
     requests.Timeout('read timed out'),
 ])
-def test_request_nominatim_returns_empty_list_when_request_fails(nominatim: MagicMock, failure: Exception) -> None:
+def test_request_nominatim_returns_none_when_request_fails(nominatim: MagicMock, failure: Exception) -> None:
     nominatim.side_effect = failure
 
     results = hm_requester.request_nominatim('19260', 'Marsow')
 
-    assert results == []
+    assert results is None
 
 
-def test_request_nominatim_returns_empty_list_on_http_error(nominatim: MagicMock) -> None:
+def test_request_nominatim_returns_none_on_http_error(nominatim: MagicMock) -> None:
     # e.g. 403 Access denied or 429 Too Many Requests
     nominatim.return_value.raise_for_status.side_effect = requests.HTTPError('403 Client Error: Forbidden')
 
     results = hm_requester.request_nominatim('19260', 'Marsow')
 
-    assert results == []
+    assert results is None
 
 
-def test_request_nominatim_returns_empty_list_on_invalid_json(nominatim: MagicMock) -> None:
+def test_request_nominatim_returns_none_on_invalid_json(nominatim: MagicMock) -> None:
     nominatim.return_value.json.side_effect = requests.JSONDecodeError('Expecting value', 'Access denied', 0)
 
     results = hm_requester.request_nominatim('19260', 'Marsow')
 
-    assert results == []
+    assert results is None
 
 
-def test_request_nominatim_returns_empty_list_on_unexpected_json(nominatim: MagicMock) -> None:
+def test_request_nominatim_returns_none_on_unexpected_json(nominatim: MagicMock) -> None:
     nominatim.return_value.json.return_value = {'error': 'Unable to geocode'}
 
     results = hm_requester.request_nominatim('19260', 'Marsow')
 
-    assert results == []
+    assert results is None
 
 
 def test_get_coords_returns_none_instead_of_crashing_when_nominatim_fails(
@@ -315,39 +315,40 @@ def fake_geodata_find(geodata_docs: list) -> object:
     return find
 
 
-def test_find_places_matches_the_search_query_first(geodata: MagicMock) -> None:
+def test_find_places_matches_the_search_query_first(phonebook: MagicMock) -> None:
     query = {'lastname': {'$regex': '^Sch'}}
 
     hm_requester.find_places('2005_Q1', query)
 
-    pipeline = geodata.aggregate.call_args.args[0]
+    pipeline = phonebook.aggregate.call_args.args[0]
     assert pipeline[0] == {'$match': query}
 
 
-def test_find_places_counts_entries_per_zip_city_and_area_code(geodata: MagicMock) -> None:
+def test_find_places_counts_entries_per_zip_city_and_area_code(phonebook: MagicMock) -> None:
     hm_requester.find_places('2005_Q1', {'lastname': 'Schütz'})
 
-    group = geodata.aggregate.call_args.args[0][1]['$group']
+    group = phonebook.aggregate.call_args.args[0][1]['$group']
     assert set(group['_id']) == {'zip', 'city', 'area_code'}
     assert group['count'] == {'$sum': 1}
 
 
-def test_find_places_returns_grouped_places(geodata: MagicMock) -> None:
-    geodata.aggregate.return_value = iter([{'zip': '19260', 'city': 'Marsow', 'area_code': '038852', 'count': 2}])
+def test_find_places_returns_grouped_places(phonebook: MagicMock) -> None:
+    phonebook.aggregate.return_value = iter([{'zip': '19260', 'city': 'Marsow', 'area_code': '038852', 'count': 2}])
 
     places = hm_requester.find_places('2005_Q1', {'lastname': 'Schütz'})
 
     assert places == [{'zip': '19260', 'city': 'Marsow', 'area_code': '038852', 'count': 2}]
 
 
-def test_find_places_allows_disk_use_for_large_searches(geodata: MagicMock) -> None:
+def test_find_places_allows_disk_use_for_large_searches(phonebook: MagicMock) -> None:
     hm_requester.find_places('2005_Q1', {'lastname': 'Maier'})
 
-    assert geodata.aggregate.call_args.kwargs['allowDiskUse'] is True
+    assert phonebook.aggregate.call_args.kwargs['allowDiskUse'] is True
 
 
-def test_hm_query_returns_coordinates_with_count_per_place(geodata: MagicMock, nominatim: MagicMock) -> None:
-    geodata.aggregate.return_value = iter([
+def test_hm_query_returns_coordinates_with_count_per_place(
+        phonebook: MagicMock, geodata: MagicMock, nominatim: MagicMock) -> None:
+    phonebook.aggregate.return_value = iter([
         {'zip': '19260', 'city': 'Marsow', 'area_code': '038852', 'count': 2},
         {'zip': '24939', 'city': 'Flensburg', 'area_code': '0461', 'count': 1},
     ])
@@ -362,8 +363,8 @@ def test_hm_query_returns_coordinates_with_count_per_place(geodata: MagicMock, n
     nominatim.assert_not_called()
 
 
-def test_hm_query_returns_empty_list_without_results(geodata: MagicMock) -> None:
-    geodata.aggregate.return_value = iter([])
+def test_hm_query_returns_empty_list_without_results(phonebook: MagicMock, geodata: MagicMock) -> None:
+    phonebook.aggregate.return_value = iter([])
 
     positions = hm_requester.hm_query('2005_Q1', {'lastname': 'Gibtesnicht'})
 
@@ -371,10 +372,10 @@ def test_hm_query_returns_empty_list_without_results(geodata: MagicMock) -> None
     geodata.find.assert_not_called()
 
 
-def test_hm_query_does_not_write_counts_into_cached_coordinates(geodata: MagicMock) -> None:
+def test_hm_query_does_not_write_counts_into_cached_coordinates(phonebook: MagicMock, geodata: MagicMock) -> None:
     # two area codes for the same zip + city share one cache entry
     geodata_docs = [{'zip': '19260', 'city': 'Marsow', 'coordinates': list(MARSOW)}]
-    geodata.aggregate.return_value = iter([
+    phonebook.aggregate.return_value = iter([
         {'zip': '19260', 'city': 'Marsow', 'area_code': '038852', 'count': 1},
         {'zip': '19260', 'city': 'Marsow', 'area_code': '0171', 'count': 1},
     ])
@@ -386,8 +387,9 @@ def test_hm_query_does_not_write_counts_into_cached_coordinates(geodata: MagicMo
     assert geodata_docs[0]['coordinates'] == MARSOW
 
 
-def test_hm_query_does_no_single_lookups_when_everything_is_cached(geodata: MagicMock, nominatim: MagicMock) -> None:
-    geodata.aggregate.return_value = iter(
+def test_hm_query_does_no_single_lookups_when_everything_is_cached(
+        phonebook: MagicMock, geodata: MagicMock, nominatim: MagicMock) -> None:
+    phonebook.aggregate.return_value = iter(
         [{'zip': f'{10000 + i}', 'city': f'Ort {i}', 'area_code': '030', 'count': 1} for i in range(500)])
     geodata.find.side_effect = fake_geodata_find(
         [{'zip': f'{10000 + i}', 'city': f'Ort {i}', 'coordinates': [52.0, 13.0]} for i in range(500)])
@@ -395,7 +397,7 @@ def test_hm_query_does_no_single_lookups_when_everything_is_cached(geodata: Magi
     positions = hm_requester.hm_query('2005_Q1', {'lastname': 'Schütz'})
 
     assert len(positions) == 500
-    geodata.aggregate.assert_called_once()  # the phone book search, grouped in MongoDB
+    phonebook.aggregate.assert_called_once()  # the phone book search, grouped in MongoDB
     geodata.find.assert_called_once()  # the geodata cache
     geodata.find_one.assert_not_called()
     nominatim.assert_not_called()
@@ -457,7 +459,8 @@ def test_get_coords_does_not_save_cached_place(geodata: MagicMock, nominatim: Ma
     geodata.update_one.assert_not_called()
 
 
-def test_get_coords_does_not_save_when_nominatim_finds_nothing(geodata: MagicMock, nominatim: MagicMock) -> None:
+def test_get_coords_does_not_save_coordinates_when_nominatim_finds_nothing(
+        geodata: MagicMock, nominatim: MagicMock) -> None:
     geodata.find_one.return_value = None
 
     coords = hm_requester.get_coords('91541', 'Rothenburg o d Tauber', '09861')
@@ -517,3 +520,108 @@ def test_parse_nominatim_coords_rejects_unusable_results(results: list) -> None:
 ])
 def test_valid_area_code(area_code: str | None, expected: bool) -> None:
     assert hm_requester.valid_area_code(area_code) is expected
+
+
+def test_get_coords_remembers_place_nominatim_does_not_know(
+        geodata: MagicMock, not_found: MagicMock, nominatim: MagicMock) -> None:
+    geodata.find_one.return_value = None
+
+    hm_requester.get_coords('91541', 'Rothenburg o d Tauber', '09861')
+
+    not_found.update_one.assert_called_once()
+    place, update = not_found.update_one.call_args.args
+    assert place == {'zip': '91541', 'city': 'Rothenburg o d Tauber'}
+    assert set(update['$setOnInsert']) == {'checked'}
+    assert not_found.update_one.call_args.kwargs['upsert'] is True
+
+
+def test_get_coords_remembers_unusable_nominatim_result_as_not_found(
+        geodata: MagicMock, not_found: MagicMock, nominatim: MagicMock) -> None:
+    geodata.find_one.return_value = None
+    nominatim.return_value.json.return_value = [{'lat': 'nan', 'lon': '10.93'}]
+
+    hm_requester.get_coords('19260', 'Marsow', '038852')
+
+    not_found.update_one.assert_called_once()
+
+
+@pytest.mark.parametrize('failure', [
+    requests.ConnectionError('no route to host'),
+    requests.Timeout('read timed out'),
+    requests.HTTPError('429 Client Error: Too Many Requests'),
+])
+def test_get_coords_does_not_remember_temporary_failures(
+        geodata: MagicMock, not_found: MagicMock, nominatim: MagicMock, failure: Exception) -> None:
+    geodata.find_one.return_value = None
+    nominatim.side_effect = failure
+
+    coords = hm_requester.get_coords('19260', 'Marsow', '038852')
+
+    assert coords is None
+    not_found.update_one.assert_not_called()
+    geodata.update_one.assert_not_called()
+
+
+def test_get_coords_skips_nominatim_for_known_not_found_place(
+        geodata: MagicMock, not_found: MagicMock, nominatim: MagicMock) -> None:
+    geodata.find_one.return_value = None
+    not_found.find_one.return_value = {'_id': 1}
+
+    coords = hm_requester.get_coords('91541', 'Rothenburg o d Tauber', '09861')
+
+    assert coords is None
+    assert not_found.find_one.call_args.args[0] == {'zip': '91541', 'city': 'Rothenburg o d Tauber'}
+    nominatim.assert_not_called()
+
+
+def test_load_geodata_cache_includes_not_found_places(geodata: MagicMock, not_found: MagicMock) -> None:
+    geodata.find.return_value = []
+    not_found.find.return_value = [{'zip': '91541', 'city': 'Rothenburg o d Tauber'}]
+
+    cache = hm_requester.load_geodata_cache([{'zip': '91541', 'city': 'Rothenburg o d Tauber'}])
+
+    assert ('91541', 'Rothenburg o d Tauber') in cache['places']
+    assert cache['places'][('91541', 'Rothenburg o d Tauber')] is None
+    assert not_found.find.call_args.args[0] == {'zip': {'$in': ['91541']}}
+
+
+def test_load_geodata_cache_prefers_coordinates_over_not_found(geodata: MagicMock, not_found: MagicMock) -> None:
+    geodata.find.return_value = [{'zip': '19260', 'city': 'Marsow', 'coordinates': MARSOW}]
+    not_found.find.return_value = [{'zip': '19260', 'city': 'Marsow'}]
+
+    cache = hm_requester.load_geodata_cache([{'zip': '19260', 'city': 'Marsow'}])
+
+    assert cache['places'][('19260', 'Marsow')] == MARSOW
+
+
+def test_not_found_place_without_city_blocks_only_zip_lookups(geodata: MagicMock, not_found: MagicMock) -> None:
+    geodata.find.return_value = [{'zip': '19260', 'city': 'Marsow', 'coordinates': MARSOW}]
+    not_found.find.return_value = [{'zip': '19260'}]
+
+    cache = hm_requester.load_geodata_cache([{'zip': '19260', 'city': ''}])
+
+    assert cache['places'][('19260', None)] == MARSOW
+
+
+def test_locate_place_skips_known_not_found_place(geodata: MagicMock, nominatim: MagicMock) -> None:
+    cache = {'places': {('91541', 'Rothenburg o d Tauber'): None}, 'area_codes': {}}
+
+    coords = hm_requester.locate_place({'zip': '91541', 'city': 'Rothenburg o d Tauber', 'area_code': '09861'}, cache)
+
+    assert coords is None
+    geodata.find_one.assert_not_called()
+    nominatim.assert_not_called()
+
+
+def test_ensure_geodata_indexes_makes_not_found_places_unique(geodata: MagicMock, not_found: MagicMock) -> None:
+    hm_requester.ensure_geodata_indexes()
+
+    not_found.create_index.assert_called_once_with([('zip', 1), ('city', 1)], unique=True)
+
+
+def test_save_not_found_keeps_api_running_when_mongodb_fails(not_found: MagicMock) -> None:
+    not_found.update_one.side_effect = pymongo.errors.AutoReconnect('connection lost')
+
+    hm_requester.save_not_found('91541', 'Rothenburg o d Tauber')
+
+    not_found.update_one.assert_called_once()
