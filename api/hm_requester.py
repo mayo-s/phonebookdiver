@@ -9,6 +9,8 @@ import helper
 # Process heatmap requests
 #
 db = helper.connect_db('Heatmap')
+# Nominatim usage policy requires an identifying User-Agent with contact info
+NOMINATIM_HEADERS = {'User-Agent': 'phonebookdiver/1.0 (https://github.com/mayo-s/phonebookdiver)'}
 
 # used for heatmap
 def hm_query(collection, query):
@@ -81,7 +83,7 @@ def get_coords(zip, city, area_code):
     if zip is None: return None
     if city is None: city = ''
     query_str = f'https://nominatim.openstreetmap.org/search.php?countrycode=de&q={zip}%20{city}%20Deutschland&format=jsonv2'
-    response = requests.get(query_str)
+    response = requests.get(query_str, headers=NOMINATIM_HEADERS)
     response = response.json()
 
     # TODO double check if values in bounds of Germany

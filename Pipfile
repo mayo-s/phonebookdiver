@@ -30,6 +30,7 @@ flake8 = "*"
 radon = "*"
 flake8-annotations = "*"
 pdbpp = "*"
+pytest = "*"
 
 [requires]
 python_version = "3.14"
