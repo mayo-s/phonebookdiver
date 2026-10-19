@@ -1,10 +1,11 @@
 import math
-from datetime import datetime, timezone
 import threading
-import pymongo
 import time
-import requests
+from datetime import datetime, timezone
+
 import helper
+import pymongo
+import requests
 
 db = helper.connect_db('Heatmap')
 # Nominatim usage policy requires an identifying User-Agent with contact info
@@ -16,6 +17,10 @@ NOMINATIM_MIN_INTERVAL = 1.0  # seconds
 last_nominatim_request = 0.0
 nominatim_lock = threading.Lock()  # flask serves requests in parallel threads
 NOT_FOUND = 'geodata_not_found'
+MAX_KM_TO_SAME_ZIP = 35
+GERMANY_LAT = (47.2, 55.1)
+GERMANY_LON = (5.8, 15.1)
+EARTH_RADIUS_KM = 6371
 
 
 def ensure_geodata_indexes() -> None:
@@ -135,8 +140,12 @@ def save_coords(zip: str, city: str | None, area_code: str | None, coords: list)
     upsert_place('geodata', place, new_fields)
 
 
-def save_not_found(zip: str, city: str | None) -> None:
-    upsert_place(NOT_FOUND, place_query(zip, city), {'checked': datetime.now(timezone.utc)})
+def save_not_found(zip: str, city: str | None, reason: str = 'unknown to Nominatim',
+                   rejected: list | None = None) -> None:
+    fields = {'checked': datetime.now(timezone.utc), 'reason': reason}
+    if rejected:
+        fields['rejected_coordinates'] = rejected
+    upsert_place(NOT_FOUND, place_query(zip, city), fields)
 
 
 def upsert_place(collection: str, place: dict, new_fields: dict) -> None:
@@ -151,11 +160,6 @@ def upsert_place(collection: str, place: dict, new_fields: dict) -> None:
 
 
 def parse_nominatim_coords(results: list) -> list | None:
-    # TODO double check if values in bounds of Germany
-    # North: 55.0583° N, 8.4165° E  (> 55.1)
-    # South: 47.2701° N, 10.1783° E (< 47.2)
-    # East: 51.2729° N, 15.0419° E  (> 15.1)
-    # West: 51.0511° N, 5.8663° E   (< 5.8)
     if not results:
         return None
     try:
@@ -165,6 +169,43 @@ def parse_nominatim_coords(results: list) -> list | None:
     if any(math.isnan(c) for c in coords):
         return None
     return coords
+
+
+def distance_km(a: list, b: list) -> float:
+    """Great-circle (haversine) distance between two [lat, lon] points."""
+    lat1, lon1, lat2, lon2 = map(math.radians, (a[0], a[1], b[0], b[1]))
+    h = math.sin((lat2 - lat1) / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin((lon2 - lon1) / 2) ** 2
+    return 2 * EARTH_RADIUS_KM * math.asin(math.sqrt(h))
+
+
+def in_germany(coords: list) -> bool:
+    return GERMANY_LAT[0] <= coords[0] <= GERMANY_LAT[1] and GERMANY_LON[0] <= coords[1] <= GERMANY_LON[1]
+
+
+def is_postcode(zip: str) -> bool:
+    return zip.isdigit() and len(zip) == 5
+
+
+def implausibility(zip: str, coords: list) -> str | None:
+    """Why coords can't belong to this zip, or None."""
+    if not in_germany(coords):
+        return 'outside Germany'
+    nearest = nearest_same_zip_km(zip, coords)
+    if nearest is not None and nearest > MAX_KM_TO_SAME_ZIP:
+        return f'{nearest:.0f} km from the nearest place with zip {zip}'
+    return None
+
+
+def nearest_same_zip_km(zip: str, coords: list) -> float | None:
+    """Distance to the nearest cached place with this zip, None if there is none or zip is a placeholder.
+
+    Nearest, not an average, so a few wrongly geocoded old entries can't get a correct result rejected.
+    """
+    if not is_postcode(zip):
+        return None
+    neighbours = [d['coordinates'] for d in db['geodata'].find({'zip': zip}, {'_id': 0, 'coordinates': 1})
+                  if d.get('coordinates')]
+    return min((distance_km(coords, n) for n in neighbours), default=None)
 
 
 def get_coords(zip: str | None, city: str | None, area_code: str | None) -> list | None:
@@ -187,6 +228,13 @@ def resolve_with_nominatim(zip: str, city: str | None, area_code: str | None) ->
     if coords is None:
         print(f'None {zip} {city}')
         save_not_found(zip, city)
+        return None
+    reason = implausibility(zip, coords)
+    if reason:
+        msg = f'Rejected Nominatim result {coords} for {zip} {city}: {reason}'
+        helper.log('WARNING', msg)
+        print(msg)
+        save_not_found(zip, city, reason=f'implausible: {reason}', rejected=coords)
         return None
     save_coords(zip, city, area_code, coords)
     return coords

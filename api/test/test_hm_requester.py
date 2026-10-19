@@ -531,7 +531,8 @@ def test_get_coords_remembers_place_nominatim_does_not_know(
     not_found.update_one.assert_called_once()
     place, update = not_found.update_one.call_args.args
     assert place == {'zip': '91541', 'city': 'Rothenburg o d Tauber'}
-    assert set(update['$setOnInsert']) == {'checked'}
+    assert set(update['$setOnInsert']) == {'checked', 'reason'}
+    assert update['$setOnInsert']['reason'] == 'unknown to Nominatim'
     assert not_found.update_one.call_args.kwargs['upsert'] is True
 
 
@@ -625,3 +626,114 @@ def test_save_not_found_keeps_api_running_when_mongodb_fails(not_found: MagicMoc
     hm_requester.save_not_found('91541', 'Rothenburg o d Tauber')
 
     not_found.update_one.assert_called_once()
+
+
+BERLIN = [52.5200, 13.4050]
+HAMBURG = [53.5511, 9.9937]
+KM_PER_DEGREE_LAT = 111.19
+
+
+def north_of(coords: list, km: float) -> list:
+    return [coords[0] + km / KM_PER_DEGREE_LAT, coords[1]]
+
+
+def test_distance_km_between_berlin_and_hamburg() -> None:
+    assert hm_requester.distance_km(BERLIN, HAMBURG) == pytest.approx(255, abs=2)
+
+
+def test_distance_km_to_same_point_is_zero() -> None:
+    assert hm_requester.distance_km(MARSOW, MARSOW) == 0
+
+
+@pytest.mark.parametrize('coords, expected', [
+    (MARSOW, True),
+    (FLENSBURG, True),
+    ([47.2, 5.8], True),   # south-west corner of the bounds
+    ([48.2082, 16.3738], False),  # Vienna
+    ([55.6761, 12.5683], False),  # Copenhagen
+    ([50.8503, 4.3517], False),   # Brussels
+])
+def test_in_germany(coords: list, expected: bool) -> None:
+    assert hm_requester.in_germany(coords) is expected
+
+
+@pytest.mark.parametrize('zip, expected', [('19260', True), ('01067', True), ('.....', False), ('1000', False), ('', False)])
+def test_is_postcode(zip: str, expected: bool) -> None:
+    assert hm_requester.is_postcode(zip) is expected
+
+
+def test_implausibility_rejects_result_outside_germany(geodata: MagicMock) -> None:
+    reason = hm_requester.implausibility('19260', [48.2082, 16.3738])
+
+    assert reason == 'outside Germany'
+
+
+def test_implausibility_accepts_result_without_cached_neighbours(geodata: MagicMock) -> None:
+    geodata.find.return_value = []
+
+    assert hm_requester.implausibility('19260', MARSOW) is None
+
+
+def test_implausibility_accepts_result_close_to_same_zip(geodata: MagicMock) -> None:
+    geodata.find.return_value = [{'coordinates': north_of(MARSOW, 30)}]
+
+    assert hm_requester.implausibility('19260', MARSOW) is None
+
+
+def test_implausibility_rejects_result_far_from_same_zip(geodata: MagicMock) -> None:
+    geodata.find.return_value = [{'coordinates': north_of(MARSOW, 40)}]
+
+    reason = hm_requester.implausibility('19260', MARSOW)
+
+    assert reason == '40 km from the nearest place with zip 19260'
+
+
+def test_implausibility_compares_with_nearest_neighbour(geodata: MagicMock) -> None:
+    # an old wrongly geocoded entry far away must not get a correct result rejected
+    geodata.find.return_value = [{'coordinates': BERLIN}, {'coordinates': north_of(MARSOW, 5)}]
+
+    assert hm_requester.implausibility('19260', MARSOW) is None
+
+
+def test_implausibility_checks_neighbours_of_the_same_zip(geodata: MagicMock) -> None:
+    geodata.find.return_value = []
+
+    hm_requester.implausibility('19260', MARSOW)
+
+    assert geodata.find.call_args.args[0] == {'zip': '19260'}
+
+
+def test_implausibility_does_not_compare_placeholder_zips(geodata: MagicMock) -> None:
+    geodata.find.return_value = [{'coordinates': BERLIN}]
+
+    reason = hm_requester.implausibility('.....', MARSOW)
+
+    assert reason is None
+    geodata.find.assert_not_called()
+
+
+def test_get_coords_rejects_implausible_result(geodata: MagicMock, not_found: MagicMock, nominatim: MagicMock) -> None:
+    geodata.find_one.return_value = None
+    geodata.find.return_value = [{'coordinates': BERLIN}]
+    nominatim.return_value.json.return_value = [{'lat': '53.4242109', 'lon': '10.9311292'}]
+
+    coords = hm_requester.get_coords('19260', 'Marsow', '038852')
+
+    assert coords is None
+    geodata.update_one.assert_not_called()
+    place, update = not_found.update_one.call_args.args
+    assert place == {'zip': '19260', 'city': 'Marsow'}
+    assert update['$setOnInsert']['reason'].startswith('implausible: ')
+    assert update['$setOnInsert']['rejected_coordinates'] == MARSOW
+
+
+def test_get_coords_saves_plausible_result(geodata: MagicMock, not_found: MagicMock, nominatim: MagicMock) -> None:
+    geodata.find_one.return_value = None
+    geodata.find.return_value = [{'coordinates': north_of(MARSOW, 5)}]
+    nominatim.return_value.json.return_value = [{'lat': '53.4242109', 'lon': '10.9311292'}]
+
+    coords = hm_requester.get_coords('19260', 'Marsow', '038852')
+
+    assert coords == MARSOW
+    geodata.update_one.assert_called_once()
+    not_found.update_one.assert_not_called()

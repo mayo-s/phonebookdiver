@@ -2,12 +2,12 @@ import time
 from typing import Iterator
 from unittest.mock import MagicMock
 
-import pymongo
 import pytest
-import requests
 
 import helper
 import hm_requester
+import pymongo
+import requests
 
 # every test in this file talks to real services: Nominatim or the local MongoDB
 pytestmark = pytest.mark.integration
@@ -391,7 +391,8 @@ def test_unknown_place_is_saved_as_not_found(
 
     hm_requester.get_coords('91541', 'Rothenburg o d Tauber', '09861')
 
-    assert not_found_entries(mongo_test_db) == [{'zip': '91541', 'city': 'Rothenburg o d Tauber'}]
+    assert not_found_entries(mongo_test_db) == [
+        {'zip': '91541', 'city': 'Rothenburg o d Tauber', 'reason': 'unknown to Nominatim'}]
     assert mongo_test_db[hm_requester.NOT_FOUND].find_one()['checked'] is not None
     assert geodata_entries(mongo_test_db, '91541') == []
 
@@ -426,7 +427,8 @@ def test_not_found_place_is_saved_once(mongo_test_db: pymongo.database.Database)
 
     hm_requester.save_not_found('91541', 'Rothenburg o d Tauber')
 
-    assert not_found_entries(mongo_test_db) == [{'zip': '91541', 'city': 'Rothenburg o d Tauber'}]
+    assert not_found_entries(mongo_test_db) == [
+        {'zip': '91541', 'city': 'Rothenburg o d Tauber', 'reason': 'unknown to Nominatim'}]
 
 
 def test_not_found_index_is_unique(mongo_test_db: pymongo.database.Database) -> None:
@@ -468,4 +470,57 @@ def test_real_nominatim_unknown_place_is_saved_as_not_found(mongo_test_db: pymon
     coords = hm_requester.get_coords('00000', 'Gibtesnichthausen', '09861')
 
     assert coords is None
-    assert not_found_entries(mongo_test_db) == [{'zip': '00000', 'city': 'Gibtesnichthausen'}]
+    assert not_found_entries(mongo_test_db) == [
+        {'zip': '00000', 'city': 'Gibtesnichthausen', 'reason': 'unknown to Nominatim'}]
+
+
+BERLIN = [52.52, 13.405]
+VELLAHN = [53.3959, 10.9611]  # same zip 19260, about 4 km from Marsow
+
+
+def test_implausible_result_is_kept_out_of_geodata(
+        mongo_test_db: pymongo.database.Database, fake_nominatim: FakeNominatim) -> None:
+    hm_requester.save_coords('19260', 'Vellahn', '038852', BERLIN)  # wrongly geocoded old entry
+    fake_nominatim.results = [{'lat': '48.2082', 'lon': '16.3738'}]  # Vienna
+
+    coords = hm_requester.get_coords('19260', 'Marsow', '038852')
+
+    assert coords is None
+    assert [e['city'] for e in geodata_entries(mongo_test_db, '19260')] == ['Vellahn']
+    entry = mongo_test_db[hm_requester.NOT_FOUND].find_one({'zip': '19260', 'city': 'Marsow'})
+    assert entry['reason'] == 'implausible: outside Germany'
+    assert entry['rejected_coordinates'] == [48.2082, 16.3738]
+
+
+def test_result_far_from_same_zip_is_rejected_and_not_requested_again(
+        mongo_test_db: pymongo.database.Database, fake_nominatim: FakeNominatim) -> None:
+    hm_requester.save_coords('19260', 'Vellahn', '038852', VELLAHN)
+    fake_nominatim.results = [{'lat': str(BERLIN[0]), 'lon': str(BERLIN[1])}]
+    hm_requester.get_coords('19260', 'Marsow', '038852')
+
+    coords = hm_requester.get_coords('19260', 'Marsow', '038852')
+
+    assert coords is None
+    assert fake_nominatim.requests == 1
+    reason = mongo_test_db[hm_requester.NOT_FOUND].find_one({'zip': '19260'})['reason']
+    km = hm_requester.distance_km(BERLIN, VELLAHN)
+    assert reason == f'implausible: {km:.0f} km from the nearest place with zip 19260'
+
+
+def test_result_close_to_same_zip_is_saved(
+        mongo_test_db: pymongo.database.Database, fake_nominatim: FakeNominatim) -> None:
+    hm_requester.save_coords('19260', 'Vellahn', '038852', VELLAHN)
+
+    coords = hm_requester.get_coords('19260', 'Marsow', '038852')
+
+    assert coords == [53.4242109, 10.9311292]
+    assert sorted(e['city'] for e in geodata_entries(mongo_test_db, '19260')) == ['Marsow', 'Vellahn']
+
+
+def test_real_nominatim_result_passes_check_against_real_neighbour(mongo_test_db: pymongo.database.Database) -> None:
+    hm_requester.save_coords('19260', 'Vellahn', '038852', VELLAHN)
+
+    coords = hm_requester.get_coords('19260', 'Marsow', '038852')
+
+    assert coords == pytest.approx([53.42, 10.93], abs=0.05)
+    assert mongo_test_db[hm_requester.NOT_FOUND].count_documents({}) == 0
