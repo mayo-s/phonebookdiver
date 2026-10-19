@@ -8,7 +8,7 @@ import pandas as pd
 logging.basicConfig(filename='./archive/_phonebookdiver-notebook.log', level=logging.DEBUG)
 
 def get_phonebooks(db):
-    ignore = ['geodata', 'counties', 'states', 'zips_cities_counties_states']
+    ignore = ['geodata', 'geodata_not_found', 'counties', 'states', 'zips_cities_counties_states']
     collections = []
     for key in dict.fromkeys(db.list_collection_names(), 'name'):
         collections.append(key)
@@ -26,7 +26,7 @@ def log(type, msg):
         logging.warning(msg)
     if type == 'INFO':
         logging.info(msg)
-    if type == 'LB':
+    if type == 'LINEBREAK':
         logging.info('')
 
 def elapsed_time(start, end):

@@ -21,7 +21,7 @@ def log(type, msg):
     logging.warning(msg)
   if type == 'INFO':
     logging.info(msg)
-  if type == 'LB':
+  if type == 'LINEBREAK':
     logging.info('')
 
 def get_main_dir():

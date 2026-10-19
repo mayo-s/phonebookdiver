@@ -13,10 +13,10 @@ try:
   client = MongoClient(MONGO_URI)
   db = client.phonebookdiver 
 except pymongo.errors.ConnectionFailure as err:
-  log('LB', '')
+  log('LINEBREAK', '')
   log('WARNING', str(err))
 else:
-  log('LB', '')
+  log('LINEBREAK', '')
   info = 'CONNECTED to ' + MONGO_URI + ' ' + db.name
   log('INFO', info)
 

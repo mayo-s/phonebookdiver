@@ -60,7 +60,7 @@ def send_to_db(collection, phonebook):
 
 # WORKFLOW
 def uploader():
-  log('LB', '')
+  log('LINEBREAK', '')
   log('INFO', 'UPLOAD to DATABASE')
   directories = get_files()
   for dir in directories:

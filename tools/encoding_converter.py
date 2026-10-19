@@ -40,7 +40,7 @@ def change_enc(dir):
 
 # START
 def encoder():
-  log('LB', '')
+  log('LINEBREAK', '')
   log('INFO', 'CONVERTER Running')
   directories = get_files()
   for dir in directories:

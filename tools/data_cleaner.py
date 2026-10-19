@@ -111,7 +111,7 @@ def clean_city():
 
 # START
 def start():
-  log('LB', '')
+  log('LINEBREAK', '')
   log('INFO', 'DATA CLEANER Running')
   directories = get_files()
   for dir in directories:
