@@ -19,6 +19,15 @@ NOMINATIM_MIN_INTERVAL = 1.0  # seconds
 last_nominatim_request = 0.0
 nominatim_lock = threading.Lock()  # flask serves requests in parallel threads
 
+def ensure_geodata_indexes() -> None:
+  try:
+    db['geodata'].create_index([('zip', pymongo.ASCENDING), ('city', pymongo.ASCENDING)])
+    db['geodata'].create_index('area_code')
+  except pymongo.errors.PyMongoError as err:
+    msg = f'Could not create geodata indexes, heatmap lookups will be slow: {err}'
+    helper.log('WARNING', msg)
+    print(msg)
+
 # used for heatmap
 def hm_query(collection, query):
   start = time.time()

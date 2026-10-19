@@ -1,12 +1,42 @@
 import time
+from typing import Iterator
 from unittest.mock import MagicMock
 
+import pymongo
 import pytest
 
+import helper
 import hm_requester
 
-# every test in this file sends real requests to Nominatim
+# every test in this file talks to real services: Nominatim or the local MongoDB
 pytestmark = pytest.mark.integration
+
+TEST_DB = 'phonebookdiver_test'
+
+
+@pytest.fixture
+def mongo_test_db(monkeypatch: pytest.MonkeyPatch) -> Iterator[pymongo.database.Database]:
+    """Point hm_requester at a throwaway database on the local MongoDB, dropped afterwards."""
+    client = pymongo.MongoClient(helper.MONGO_URI, serverSelectionTimeoutMS=2000)
+    try:
+        client.admin.command('ping')
+    except pymongo.errors.PyMongoError:
+        pytest.skip(f'MongoDB not reachable at {helper.MONGO_URI}')
+    client.drop_database(TEST_DB)
+    db = client[TEST_DB]
+    monkeypatch.setattr(hm_requester, 'db', db)
+    yield db
+    client.drop_database(TEST_DB)
+    client.close()
+
+
+@pytest.fixture
+def no_nominatim(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fail the test if anything tries to reach Nominatim."""
+    def fail(*args: object, **kwargs: object) -> None:
+        pytest.fail('unexpected Nominatim request')
+
+    monkeypatch.setattr(hm_requester.requests, 'get', fail)
 
 
 def test_get_coords_resolves_place_via_real_nominatim(geodata: MagicMock) -> None:
@@ -48,3 +78,57 @@ def test_unreachable_server_returns_empty_list(monkeypatch: pytest.MonkeyPatch) 
     results = hm_requester.request_nominatim('19260', 'Marsow')
 
     assert results == []
+
+
+def test_ensure_geodata_indexes_creates_indexes_in_mongodb(mongo_test_db: pymongo.database.Database) -> None:
+    hm_requester.ensure_geodata_indexes()
+
+    keys = [index['key'] for index in mongo_test_db['geodata'].index_information().values()]
+    assert [('zip', 1), ('city', 1)] in keys
+    assert [('area_code', 1)] in keys
+
+
+def test_ensure_geodata_indexes_can_run_on_every_start(mongo_test_db: pymongo.database.Database) -> None:
+    hm_requester.ensure_geodata_indexes()
+
+    hm_requester.ensure_geodata_indexes()
+
+    assert len(mongo_test_db['geodata'].index_information()) == 3  # _id + the two geodata indexes
+
+
+def test_zip_and_city_lookup_uses_index(mongo_test_db: pymongo.database.Database) -> None:
+    hm_requester.ensure_geodata_indexes()
+
+    plan = mongo_test_db['geodata'].find({'zip': '19260', 'city': 'Marsow'}).explain()
+
+    assert 'IXSCAN' in str(plan['queryPlanner']['winningPlan'])
+
+
+def test_area_code_lookup_uses_index(mongo_test_db: pymongo.database.Database) -> None:
+    hm_requester.ensure_geodata_indexes()
+
+    plan = mongo_test_db['geodata'].find({'area_code': '038852'}).explain()
+
+    assert 'IXSCAN' in str(plan['queryPlanner']['winningPlan'])
+
+
+def test_get_coords_reads_cached_place_from_mongodb(
+        mongo_test_db: pymongo.database.Database, no_nominatim: None) -> None:
+    hm_requester.ensure_geodata_indexes()
+    mongo_test_db['geodata'].insert_one(
+        {'zip': '19260', 'city': 'Marsow', 'area_code': '038852', 'coordinates': [53.4242109, 10.9311292]})
+
+    coords = hm_requester.get_coords('19260', 'Marsow', '038852')
+
+    assert coords == [53.4242109, 10.9311292]
+
+
+def test_get_coords_by_area_code_reads_cached_place_from_mongodb(
+        mongo_test_db: pymongo.database.Database, no_nominatim: None) -> None:
+    hm_requester.ensure_geodata_indexes()
+    mongo_test_db['geodata'].insert_one(
+        {'zip': '19260', 'city': 'Marsow', 'area_code': '038852', 'coordinates': [53.4242109, 10.9311292]})
+
+    coords = hm_requester.get_coords_by_area_code('038852')
+
+    assert coords == [53.4242109, 10.9311292]

@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from requester import get_all_collections, search_colls, fetch_details_by_id, get_federal_states, get_counties
-from hm_requester import  hm_query
+from hm_requester import  hm_query, ensure_geodata_indexes
 
 # author: Mario Schuetz
 #
@@ -10,6 +10,7 @@ from hm_requester import  hm_query
 
 app = Flask(__name__)
 CORS(app)
+ensure_geodata_indexes()
 
 @app.route('/all_collections')
 def all_collections():

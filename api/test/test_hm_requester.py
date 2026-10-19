@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock
 
+import pymongo
 import pytest
 import requests
 
@@ -167,3 +168,19 @@ def test_failed_nominatim_request_still_counts_for_rate_limit(clock: FakeClock, 
     hm_requester.request_nominatim('91541', 'Rothenburg o d Tauber')
 
     assert clock.sleeps == [pytest.approx(hm_requester.NOMINATIM_MIN_INTERVAL)]
+
+
+def test_ensure_geodata_indexes_creates_zip_city_and_area_code_index(geodata: MagicMock) -> None:
+    hm_requester.ensure_geodata_indexes()
+
+    created = [c.args[0] for c in geodata.create_index.call_args_list]
+    assert [('zip', 1), ('city', 1)] in created
+    assert 'area_code' in created
+
+
+def test_ensure_geodata_indexes_keeps_api_running_when_mongodb_is_down(geodata: MagicMock) -> None:
+    geodata.create_index.side_effect = pymongo.errors.ServerSelectionTimeoutError('No servers found')
+
+    hm_requester.ensure_geodata_indexes()
+
+    geodata.create_index.assert_called_once()
