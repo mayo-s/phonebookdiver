@@ -65,7 +65,7 @@ def files_to_array(dir):
     # TODO use cleaner way by explicitly ignoring
     # field_name = fields.get(file[:-6], '')
     field_name = fields.get(file, '')
-    if field_name is '':
+    if field_name == '':
       msg = file + ' does not have a field name'
       log('WARNING', msg)
       continue
@@ -79,7 +79,7 @@ def files_to_array(dir):
           entry['_id'] = int(i)
           phonebook.append(entry)
 
-        if line.strip() is '':
+        if line.strip() == '':
           continue
         line = check_substring(line)
         phonebook[i][field_name] = str(line.strip())
