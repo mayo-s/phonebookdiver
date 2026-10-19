@@ -29,8 +29,11 @@ class CommandLog(pymongo.monitoring.CommandListener):
     def failed(self, event: pymongo.monitoring.CommandFailedEvent) -> None:
         pass
 
+    def count(self, command: str, collection: str) -> int:
+        return sum(1 for name, target in self.commands if name == command and target == collection)
+
     def finds_on(self, collection: str) -> int:
-        return sum(1 for name, target in self.commands if name == 'find' and target == collection)
+        return self.count('find', collection)
 
 
 @pytest.fixture
@@ -197,3 +200,87 @@ def test_hm_query_keeps_cached_coordinates_in_mongodb_unchanged(
     hm_requester.hm_query('2005_Q1', {'lastname': 'Schütz'})
 
     assert mongo_test_db['geodata'].find_one({'zip': '10000'})['coordinates'] == [52.0, 13.0]
+
+
+def places_by_key(places: list) -> dict:
+    return {(p['zip'], p['city'], p['area_code']): p['count'] for p in places}
+
+
+def test_find_places_counts_entries_per_place(mongo_test_db: pymongo.database.Database) -> None:
+    mongo_test_db['2005_Q1'].insert_many([
+        {'lastname': 'Schütz', 'zip': '19260', 'city': 'Marsow', 'area_code': '038852'},
+        {'lastname': 'Schütz', 'zip': '19260', 'city': 'Marsow', 'area_code': '038852'},
+        {'lastname': 'Schütz', 'zip': '24939', 'city': 'Flensburg', 'area_code': '0461'},
+        {'lastname': 'Maier', 'zip': '24939', 'city': 'Flensburg', 'area_code': '0461'},
+    ])
+
+    places = hm_requester.find_places('2005_Q1', {'lastname': 'Schütz'})
+
+    assert places_by_key(places) == {('19260', 'Marsow', '038852'): 2, ('24939', 'Flensburg', '0461'): 1}
+
+
+def test_find_places_groups_zip_and_city_case_insensitively(mongo_test_db: pymongo.database.Database) -> None:
+    mongo_test_db['2005_Q1'].insert_many([
+        {'lastname': 'Schütz', 'zip': '19260', 'city': 'Marsow', 'area_code': '038852'},
+        {'lastname': 'Schütz', 'zip': '19260', 'city': 'MARSOW', 'area_code': '038852'},
+    ])
+
+    places = hm_requester.find_places('2005_Q1', {'lastname': 'Schütz'})
+
+    assert len(places) == 1
+    assert places[0]['count'] == 2
+
+
+def test_find_places_keeps_area_codes_of_one_place_apart(mongo_test_db: pymongo.database.Database) -> None:
+    mongo_test_db['2005_Q1'].insert_many([
+        {'lastname': 'Schütz', 'zip': '19260', 'city': 'Marsow', 'area_code': '038852'},
+        {'lastname': 'Schütz', 'zip': '19260', 'city': 'Marsow', 'area_code': '0171'},
+    ])
+
+    places = hm_requester.find_places('2005_Q1', {'lastname': 'Schütz'})
+
+    assert places_by_key(places) == {('19260', 'Marsow', '038852'): 1, ('19260', 'Marsow', '0171'): 1}
+
+
+def test_find_places_turns_missing_area_code_into_empty_string(mongo_test_db: pymongo.database.Database) -> None:
+    mongo_test_db['2005_Q1'].insert_many([
+        {'lastname': 'Schütz', 'zip': '19260', 'city': 'Marsow'},
+        {'lastname': 'Schütz', 'zip': '19260', 'city': 'Marsow', 'area_code': None},
+        {'lastname': 'Schütz', 'zip': '19260', 'city': 'Marsow', 'area_code': ''},
+    ])
+
+    places = hm_requester.find_places('2005_Q1', {'lastname': 'Schütz'})
+
+    assert places_by_key(places) == {('19260', 'Marsow', ''): 3}
+
+
+def test_find_places_supports_regex_search(mongo_test_db: pymongo.database.Database) -> None:
+    mongo_test_db['2005_Q1'].insert_many([
+        {'lastname': 'Schütz', 'zip': '19260', 'city': 'Marsow', 'area_code': '038852'},
+        {'lastname': 'Schulz', 'zip': '19260', 'city': 'Marsow', 'area_code': '038852'},
+        {'lastname': 'Maier', 'zip': '19260', 'city': 'Marsow', 'area_code': '038852'},
+    ])
+
+    places = hm_requester.find_places('2005_Q1', {'lastname': {'$regex': '^Sch'}})
+
+    assert places_by_key(places) == {('19260', 'Marsow', '038852'): 2}
+
+
+def test_find_places_returns_empty_list_without_matches(mongo_test_db: pymongo.database.Database) -> None:
+    mongo_test_db['2005_Q1'].insert_one({'lastname': 'Maier', 'zip': '19260', 'city': 'Marsow'})
+
+    places = hm_requester.find_places('2005_Q1', {'lastname': 'Schütz'})
+
+    assert places == []
+
+
+def test_hm_query_groups_search_in_one_aggregation(
+        mongo_test_db: pymongo.database.Database, command_log: CommandLog, no_nominatim: None) -> None:
+    insert_phonebook(mongo_test_db, places=50, entries_per_place=4)
+    command_log.commands.clear()
+
+    positions = hm_requester.hm_query('2005_Q1', {'lastname': 'Schütz'})
+
+    assert len(positions) == 50 and all(p[2] == 4 for p in positions)
+    assert command_log.count('aggregate', '2005_Q1') == 1
+    assert command_log.finds_on('2005_Q1') == 0  # entries are no longer loaded one by one into Python

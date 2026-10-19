@@ -5,10 +5,6 @@ import time
 import requests
 import helper
 
-# author: Mario Schuetz
-#
-# Process heatmap requests
-#
 db = helper.connect_db('Heatmap')
 # Nominatim usage policy requires an identifying User-Agent with contact info
 NOMINATIM_HEADERS = {'User-Agent': 'phonebookdiver/1.0 (https://github.com/mayo-s/phonebookdiver)'}
@@ -34,12 +30,11 @@ def ensure_geodata_indexes() -> None:
 def hm_query(collection, query):
     start = time.time()
     print(f'Searching for {query} in {collection}')
-    results = list(db[collection].find(query, {'_id': 1, 'zip': 1, 'city': 1, 'area_code': 1}))
-    if results is None or len(results) <= 0:
+    results = find_places(collection, query)
+    if not results:
         print('Found 0 results')
         return []
-    print(f'Found {len(results)} results')
-    results = sort_results_by_zip_and_city(results)
+    print(f'Found {sum(r.get("count") for r in results)} results in {len(results)} places')
     print('Geocoding...')
     cache = load_geodata_cache(results)
     geo_list = []
@@ -54,25 +49,23 @@ def hm_query(collection, query):
     return geo_list
 
 
-def sort_results_by_zip_and_city(results):
-    print('Sorting...')
-    sorted_results = []
-    for r in results:
-        zip = r.get('zip')
-        city = r.get('city')
-        area_code = r.get('area_code')
-        if not area_code: area_code = ''
-        address = f'{zip} {city} Deutschland'
-        found = False
-        for sr in sorted_results:
-            if (address + area_code).lower().__hash__() == (sr.get('address') + sr.get('area_code')).lower().__hash__():
-                sr['count'] = sr.get('count') + 1
-                found = True
-                break
-        if not found:
-            sorted_results.append({'address': address, 'zip': zip, 'city': city, 'area_code': area_code, 'count': 1})
-
-    return sorted_results
+def find_places(collection: str, query: dict) -> list:
+    pipeline = [
+        {'$match': query},
+        {'$group': {
+            '_id': {
+                'zip': {'$toLower': '$zip'},
+                'city': {'$toLower': '$city'},
+                'area_code': {'$toLower': '$area_code'},
+            },
+            'zip': {'$first': '$zip'},
+            'city': {'$first': '$city'},
+            'area_code': {'$first': {'$ifNull': ['$area_code', '']}},
+            'count': {'$sum': 1},
+        }},
+        {'$project': {'_id': 0}},
+    ]
+    return list(db[collection].aggregate(pipeline, allowDiskUse=True))
 
 
 def load_geodata_cache(places: list) -> dict:
@@ -86,7 +79,6 @@ def load_geodata_cache(places: list) -> dict:
     return {'places': load_cached_places(zips), 'area_codes': load_cached_area_codes(area_codes)}
 
 
-# keyed by (zip, city) and by (zip, None), matching the lookups get_coords does
 def load_cached_places(zips: set) -> dict:
     places = {}
     if not zips:
@@ -107,9 +99,8 @@ def load_cached_area_codes(area_codes: set) -> dict:
     return coords
 
 
-# Coordinates for one grouped search result: from the cache if possible, otherwise via get_coords
-# (Nominatim), whose answer is kept in the cache for further places with the same zip and city.
 def locate_place(place: dict, cache: dict) -> list | None:
+    """Caches get_coords results too, so each zip + city is looked up only once per search."""
     zip = place.get('zip')
     city = place.get('city')
     area_code = place.get('area_code')
@@ -179,8 +170,8 @@ def wait_for_nominatim_slot() -> None:
         last_nominatim_request = time.monotonic()
 
 
-# returns the list of Nominatim results, or [] if the request failed
 def request_nominatim(zip: str, city: str) -> list:
+    """Returns [] on any failure, so one unresolved place doesn't break the whole heatmap."""
     wait_for_nominatim_slot()
     query_str = f'{NOMINATIM_URL}?countrycode=de&q={zip}%20{city}%20Deutschland&format=jsonv2'
     try:
