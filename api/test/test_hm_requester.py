@@ -184,3 +184,181 @@ def test_ensure_geodata_indexes_keeps_api_running_when_mongodb_is_down(geodata: 
     hm_requester.ensure_geodata_indexes()
 
     geodata.create_index.assert_called_once()
+
+
+MARSOW = [53.4242109, 10.9311292]
+FLENSBURG = [54.7833021, 9.4333264]
+
+
+def test_load_geodata_cache_queries_all_zips_in_one_go(geodata: MagicMock) -> None:
+    geodata.find.return_value = []
+    places = [{'zip': '19260', 'city': 'Marsow'}, {'zip': '24939', 'city': 'Flensburg'},
+              {'zip': '19260', 'city': 'Marsow'}]
+
+    hm_requester.load_geodata_cache(places)
+
+    geodata.find.assert_called_once()
+    assert sorted(geodata.find.call_args.args[0]['zip']['$in']) == ['19260', '24939']
+    geodata.find_one.assert_not_called()
+
+
+def test_load_geodata_cache_does_not_query_without_places(geodata: MagicMock) -> None:
+    hm_requester.load_geodata_cache([])
+
+    geodata.find.assert_not_called()
+
+
+def test_load_geodata_cache_keys_places_by_zip_and_city_and_by_zip_alone(geodata: MagicMock) -> None:
+    geodata.find.return_value = [{'zip': '19260', 'city': 'Marsow', 'coordinates': MARSOW}]
+
+    cache = hm_requester.load_geodata_cache([{'zip': '19260', 'city': 'Marsow'}])
+
+    assert cache['places'][('19260', 'Marsow')] == MARSOW
+    assert cache['places'][('19260', None)] == MARSOW
+
+
+def test_load_geodata_cache_keeps_first_entry_for_duplicate_places(geodata: MagicMock) -> None:
+    # geodata holds one entry per area code, so the same zip + city appears several times
+    geodata.find.return_value = [
+        {'zip': '19260', 'city': 'Marsow', 'coordinates': MARSOW},
+        {'zip': '19260', 'city': 'Marsow', 'coordinates': FLENSBURG},
+    ]
+
+    cache = hm_requester.load_geodata_cache([{'zip': '19260', 'city': 'Marsow'}])
+
+    assert cache['places'][('19260', 'Marsow')] == MARSOW
+
+
+def test_load_geodata_cache_queries_area_codes_only_for_places_without_zip(geodata: MagicMock) -> None:
+    geodata.find.return_value = []
+    places = [
+        {'zip': '19260', 'city': 'Marsow', 'area_code': '038852'},
+        {'zip': None, 'city': None, 'area_code': '0461'},
+        {'zip': None, 'city': None, 'area_code': '0171'},  # mobile prefix, no location
+    ]
+
+    hm_requester.load_geodata_cache(places)
+
+    area_code_queries = [c.args[0] for c in geodata.find.call_args_list if 'area_code' in c.args[0]]
+    assert area_code_queries == [{'area_code': {'$in': ['0461']}}]
+
+
+def test_locate_place_uses_cache_without_lookup(geodata: MagicMock, nominatim: MagicMock) -> None:
+    cache = {'places': {('19260', 'Marsow'): MARSOW}, 'area_codes': {}}
+
+    coords = hm_requester.locate_place({'zip': '19260', 'city': 'Marsow', 'area_code': '038852'}, cache)
+
+    assert coords == MARSOW
+    geodata.find_one.assert_not_called()
+    nominatim.assert_not_called()
+
+
+def test_locate_place_without_city_uses_zip_entry(geodata: MagicMock, nominatim: MagicMock) -> None:
+    cache = {'places': {('19260', None): MARSOW}, 'area_codes': {}}
+
+    coords = hm_requester.locate_place({'zip': '19260', 'city': '', 'area_code': None}, cache)
+
+    assert coords == MARSOW
+    nominatim.assert_not_called()
+
+
+def test_locate_place_asks_nominatim_once_per_zip_and_city(geodata: MagicMock, nominatim: MagicMock) -> None:
+    # the same place appears once per area code in the grouped search results
+    geodata.find_one.return_value = None
+    nominatim.return_value.json.return_value = [{'lat': '53.4242109', 'lon': '10.9311292'}]
+    cache = {'places': {}, 'area_codes': {}}
+    hm_requester.locate_place({'zip': '19260', 'city': 'Marsow', 'area_code': '038852'}, cache)
+
+    coords = hm_requester.locate_place({'zip': '19260', 'city': 'Marsow', 'area_code': '0171'}, cache)
+
+    assert coords == MARSOW
+    nominatim.assert_called_once()
+
+
+def test_locate_place_remembers_unresolved_place_within_search(geodata: MagicMock, nominatim: MagicMock) -> None:
+    geodata.find_one.return_value = None
+    cache = {'places': {}, 'area_codes': {}}
+    hm_requester.locate_place({'zip': '91541', 'city': 'Rothenburg o d Tauber', 'area_code': '09861'}, cache)
+
+    coords = hm_requester.locate_place({'zip': '91541', 'city': 'Rothenburg o d Tauber', 'area_code': '0171'}, cache)
+
+    assert coords is None
+    nominatim.assert_called_once()
+
+
+def test_locate_place_by_area_code_uses_cache(geodata: MagicMock) -> None:
+    cache = {'places': {}, 'area_codes': {'0461': FLENSBURG}}
+
+    coords = hm_requester.locate_place({'zip': None, 'city': None, 'area_code': '0461'}, cache)
+
+    assert coords == FLENSBURG
+    geodata.find_one.assert_not_called()
+
+
+@pytest.mark.parametrize('area_code', ['0171', None, '0800'])
+def test_locate_place_skips_place_without_zip_and_usable_area_code(area_code: str | None) -> None:
+    cache = {'places': {}, 'area_codes': {'0171': MARSOW}}
+
+    coords = hm_requester.locate_place({'zip': None, 'city': None, 'area_code': area_code}, cache)
+
+    assert coords is None
+
+
+def fake_find(search_results: list, geodata_docs: list) -> object:
+    """db[...].find for hm_query: geodata queries use $in, everything else is the phone book search."""
+
+    def find(query: dict, projection: dict = None) -> list:
+        if any(isinstance(v, dict) and '$in' in v for v in query.values()):
+            field = next(iter(query))
+            wanted = set(query[field]['$in'])
+            return [d for d in geodata_docs if d.get(field) in wanted]
+        return search_results
+
+    return find
+
+
+def test_hm_query_returns_coordinates_with_count_per_place(geodata: MagicMock, nominatim: MagicMock) -> None:
+    geodata.find.side_effect = fake_find(
+        [
+            {'zip': '19260', 'city': 'Marsow', 'area_code': '038852'},
+            {'zip': '19260', 'city': 'Marsow', 'area_code': '038852'},
+            {'zip': '24939', 'city': 'Flensburg', 'area_code': '0461'},
+        ],
+        [
+            {'zip': '19260', 'city': 'Marsow', 'coordinates': MARSOW},
+            {'zip': '24939', 'city': 'Flensburg', 'coordinates': FLENSBURG},
+        ])
+
+    positions = hm_requester.hm_query('2005_Q1', {'lastname': 'Schütz'})
+
+    assert sorted(positions) == sorted([MARSOW + [2], FLENSBURG + [1]])
+    nominatim.assert_not_called()
+
+
+def test_hm_query_does_not_write_counts_into_cached_coordinates(geodata: MagicMock) -> None:
+    # two area codes for the same zip + city share one cache entry
+    geodata_docs = [{'zip': '19260', 'city': 'Marsow', 'coordinates': list(MARSOW)}]
+    geodata.find.side_effect = fake_find(
+        [
+            {'zip': '19260', 'city': 'Marsow', 'area_code': '038852'},
+            {'zip': '19260', 'city': 'Marsow', 'area_code': '0171'},
+        ],
+        geodata_docs)
+
+    positions = hm_requester.hm_query('2005_Q1', {'lastname': 'Schütz'})
+
+    assert positions == [MARSOW + [1], MARSOW + [1]]
+    assert geodata_docs[0]['coordinates'] == MARSOW
+
+
+def test_hm_query_does_no_single_lookups_when_everything_is_cached(geodata: MagicMock, nominatim: MagicMock) -> None:
+    geodata.find.side_effect = fake_find(
+        [{'zip': f'{10000 + i}', 'city': f'Ort {i}', 'area_code': '030'} for i in range(500)],
+        [{'zip': f'{10000 + i}', 'city': f'Ort {i}', 'coordinates': [52.0, 13.0]} for i in range(500)])
+
+    positions = hm_requester.hm_query('2005_Q1', {'lastname': 'Schütz'})
+
+    assert len(positions) == 500
+    assert geodata.find.call_count == 2  # the phone book search + one geodata query
+    geodata.find_one.assert_not_called()
+    nominatim.assert_not_called()

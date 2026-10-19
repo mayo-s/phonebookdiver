@@ -14,10 +14,34 @@ pytestmark = pytest.mark.integration
 TEST_DB = 'phonebookdiver_test'
 
 
+class CommandLog(pymongo.monitoring.CommandListener):
+    """Records every command the client sends, to count real round trips to MongoDB."""
+
+    def __init__(self) -> None:
+        self.commands = []
+
+    def started(self, event: pymongo.monitoring.CommandStartedEvent) -> None:
+        self.commands.append((event.command_name, event.command.get(event.command_name)))
+
+    def succeeded(self, event: pymongo.monitoring.CommandSucceededEvent) -> None:
+        pass
+
+    def failed(self, event: pymongo.monitoring.CommandFailedEvent) -> None:
+        pass
+
+    def finds_on(self, collection: str) -> int:
+        return sum(1 for name, target in self.commands if name == 'find' and target == collection)
+
+
 @pytest.fixture
-def mongo_test_db(monkeypatch: pytest.MonkeyPatch) -> Iterator[pymongo.database.Database]:
+def command_log() -> CommandLog:
+    return CommandLog()
+
+
+@pytest.fixture
+def mongo_test_db(monkeypatch: pytest.MonkeyPatch, command_log: CommandLog) -> Iterator[pymongo.database.Database]:
     """Point hm_requester at a throwaway database on the local MongoDB, dropped afterwards."""
-    client = pymongo.MongoClient(helper.MONGO_URI, serverSelectionTimeoutMS=2000)
+    client = pymongo.MongoClient(helper.MONGO_URI, serverSelectionTimeoutMS=2000, event_listeners=[command_log])
     try:
         client.admin.command('ping')
     except pymongo.errors.PyMongoError:
@@ -33,6 +57,7 @@ def mongo_test_db(monkeypatch: pytest.MonkeyPatch) -> Iterator[pymongo.database.
 @pytest.fixture
 def no_nominatim(monkeypatch: pytest.MonkeyPatch) -> None:
     """Fail the test if anything tries to reach Nominatim."""
+
     def fail(*args: object, **kwargs: object) -> None:
         pytest.fail('unexpected Nominatim request')
 
@@ -132,3 +157,43 @@ def test_get_coords_by_area_code_reads_cached_place_from_mongodb(
     coords = hm_requester.get_coords_by_area_code('038852')
 
     assert coords == [53.4242109, 10.9311292]
+
+
+def insert_phonebook(db: pymongo.database.Database, places: int, entries_per_place: int) -> None:
+    db['2005_Q1'].insert_many([
+        {'lastname': 'Schütz', 'zip': f'{10000 + i}', 'city': f'Ort {i}', 'area_code': '030'}
+        for i in range(places) for _ in range(entries_per_place)])
+    db['geodata'].insert_many([
+        {'zip': f'{10000 + i}', 'city': f'Ort {i}', 'area_code': '030', 'coordinates': [52.0 + i / 1000, 13.0]}
+        for i in range(places)])
+
+
+def test_hm_query_returns_heatmap_positions_from_mongodb(
+        mongo_test_db: pymongo.database.Database, no_nominatim: None) -> None:
+    hm_requester.ensure_geodata_indexes()
+    insert_phonebook(mongo_test_db, places=3, entries_per_place=2)
+
+    positions = hm_requester.hm_query('2005_Q1', {'lastname': 'Schütz'})
+
+    assert sorted(positions) == [[52.0, 13.0, 2], [52.001, 13.0, 2], [52.002, 13.0, 2]]
+
+
+def test_hm_query_loads_cache_with_one_geodata_query(
+        mongo_test_db: pymongo.database.Database, command_log: CommandLog, no_nominatim: None) -> None:
+    hm_requester.ensure_geodata_indexes()
+    insert_phonebook(mongo_test_db, places=300, entries_per_place=1)
+    command_log.commands.clear()
+
+    positions = hm_requester.hm_query('2005_Q1', {'lastname': 'Schütz'})
+
+    assert len(positions) == 300
+    assert command_log.finds_on('geodata') == 1  # was one per place before
+
+
+def test_hm_query_keeps_cached_coordinates_in_mongodb_unchanged(
+        mongo_test_db: pymongo.database.Database, no_nominatim: None) -> None:
+    insert_phonebook(mongo_test_db, places=1, entries_per_place=3)
+
+    hm_requester.hm_query('2005_Q1', {'lastname': 'Schütz'})
+
+    assert mongo_test_db['geodata'].find_one({'zip': '10000'})['coordinates'] == [52.0, 13.0]
