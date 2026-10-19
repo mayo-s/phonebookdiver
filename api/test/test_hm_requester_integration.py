@@ -284,3 +284,93 @@ def test_hm_query_groups_search_in_one_aggregation(
     assert len(positions) == 50 and all(p[2] == 4 for p in positions)
     assert command_log.count('aggregate', '2005_Q1') == 1
     assert command_log.finds_on('2005_Q1') == 0  # entries are no longer loaded one by one into Python
+
+
+class FakeNominatim:
+    """Answers every request with Marsow's coordinates and counts the requests."""
+
+    def __init__(self) -> None:
+        self.requests = 0
+
+    def get(self, *args: object, **kwargs: object) -> MagicMock:
+        self.requests += 1
+        response = MagicMock()
+        response.json.return_value = [{'lat': '53.4242109', 'lon': '10.9311292'}]
+        return response
+
+
+@pytest.fixture
+def fake_nominatim(monkeypatch: pytest.MonkeyPatch) -> FakeNominatim:
+    fake = FakeNominatim()
+    monkeypatch.setattr(hm_requester.requests, 'get', fake.get)
+    monkeypatch.setattr(hm_requester, 'NOMINATIM_MIN_INTERVAL', 0.0)
+    return fake
+
+
+def geodata_entries(db: pymongo.database.Database, zip: str) -> list:
+    return list(db['geodata'].find({'zip': zip}, {'_id': 0}))
+
+
+@pytest.mark.parametrize('area_code, saved', [
+    ('038852', {'zip': '19260', 'city': 'Marsow', 'coordinates': [53.4242109, 10.9311292], 'area_code': '038852'}),
+    ('0171', {'zip': '19260', 'city': 'Marsow', 'coordinates': [53.4242109, 10.9311292]}),
+    ('', {'zip': '19260', 'city': 'Marsow', 'coordinates': [53.4242109, 10.9311292]}),
+])
+def test_get_coords_saves_nominatim_result_in_mongodb(
+        mongo_test_db: pymongo.database.Database, fake_nominatim: FakeNominatim, area_code: str, saved: dict) -> None:
+    hm_requester.get_coords('19260', 'Marsow', area_code)
+
+    assert geodata_entries(mongo_test_db, '19260') == [saved]
+
+
+def test_saved_place_is_not_requested_again(
+        mongo_test_db: pymongo.database.Database, fake_nominatim: FakeNominatim) -> None:
+    hm_requester.get_coords('19260', 'Marsow', '0171')
+
+    coords = hm_requester.get_coords('19260', 'Marsow', '038852')
+
+    assert coords == [53.4242109, 10.9311292]
+    assert fake_nominatim.requests == 1
+    assert len(geodata_entries(mongo_test_db, '19260')) == 1
+
+
+def test_save_coords_keeps_one_entry_per_zip_and_city(mongo_test_db: pymongo.database.Database) -> None:
+    hm_requester.save_coords('19260', 'Marsow', '038852', [53.4242109, 10.9311292])
+
+    hm_requester.save_coords('19260', 'Marsow', '038852', [1.0, 2.0])
+
+    assert geodata_entries(mongo_test_db, '19260') == [
+        {'zip': '19260', 'city': 'Marsow', 'coordinates': [53.4242109, 10.9311292], 'area_code': '038852'}]
+
+
+def test_mobile_area_code_never_gets_a_location(
+        mongo_test_db: pymongo.database.Database, fake_nominatim: FakeNominatim) -> None:
+    hm_requester.get_coords('19260', 'Marsow', '0171')
+
+    coords = hm_requester.get_coords_by_area_code('0171')
+
+    assert coords is None
+
+
+def test_second_heatmap_search_sends_no_nominatim_requests(
+        mongo_test_db: pymongo.database.Database, fake_nominatim: FakeNominatim) -> None:
+    mongo_test_db['2005_Q1'].insert_many([
+        {'lastname': 'Schütz', 'zip': '19260', 'city': 'Marsow', 'area_code': '038852'},
+        {'lastname': 'Schütz', 'zip': '19260', 'city': 'Marsow', 'area_code': '0171'},
+        {'lastname': 'Schütz', 'zip': '24939', 'city': 'Flensburg', 'area_code': '0800'},
+    ])
+    first = hm_requester.hm_query('2005_Q1', {'lastname': 'Schütz'})
+    requests_after_first_search = fake_nominatim.requests
+
+    second = hm_requester.hm_query('2005_Q1', {'lastname': 'Schütz'})
+
+    assert requests_after_first_search == 2  # one per zip + city
+    assert fake_nominatim.requests == requests_after_first_search
+    assert sorted(second) == sorted(first)
+
+
+def test_get_coords_saves_real_nominatim_result_in_mongodb(mongo_test_db: pymongo.database.Database) -> None:
+    coords = hm_requester.get_coords('19260', 'Marsow', '0171')
+
+    assert geodata_entries(mongo_test_db, '19260') == [{'zip': '19260', 'city': 'Marsow', 'coordinates': coords}]
+    assert coords == pytest.approx([53.42, 10.93], abs=0.05)

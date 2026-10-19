@@ -1,4 +1,4 @@
-import sys
+import math
 import threading
 import pymongo
 import time
@@ -27,7 +27,7 @@ def ensure_geodata_indexes() -> None:
 
 
 # used for heatmap
-def hm_query(collection, query):
+def hm_query(collection: str, query: dict) -> list:
     start = time.time()
     print(f'Searching for {query} in {collection}')
     results = find_places(collection, query)
@@ -114,51 +114,59 @@ def locate_place(place: dict, cache: dict) -> list | None:
     return None
 
 
-def update_coords_collection(zip, city, area_code, coords):
-    insert_obj = {}
-    if zip: insert_obj['zip'] = zip
-    if city: insert_obj['city'] = city
-    if area_code: insert_obj['area_code'] = area_code
-    if coords: insert_obj['coordinates'] = coords
-    msg = f'Insert into geodata {insert_obj}'
-    helper.log('INFO', msg)
-    print(msg)
-    db['geodata'].insert_one(insert_obj)
+def place_query(zip: str, city: str | None) -> dict:
+    query = {'zip': zip}
+    if city:
+        query['city'] = city
+    return query
 
 
-def get_coords(zip, city, area_code):
-    query = {}
-    if zip: query['zip'] = zip
-    if city: query['city'] = city
-    coords = db['geodata'].find_one(query, {'coordinates': 1})
-    if coords:
-        return coords.get('coordinates')
-    else:
-        # TODO double checked?
-        if zip is None: return None
-        if city is None: city = ''
-        response = request_nominatim(zip, city)
+def save_coords(zip: str, city: str | None, area_code: str | None, coords: list) -> None:
+    """One entry per zip + city. The area code is only stored if valid, so mobile prefixes never get a location."""
+    place = place_query(zip, city)
+    new_fields = {'coordinates': coords}
+    if valid_area_code(area_code):
+        new_fields['area_code'] = area_code
+    try:
+        db['geodata'].update_one(place, {'$setOnInsert': new_fields}, upsert=True)
+    except pymongo.errors.PyMongoError as err:
+        msg = f'Could not save coordinates for {zip} {city}: {err}'
+        helper.log('WARNING', msg)
+        print(msg)
+        return
+    helper.log('INFO', f'Saved to geodata {place} {new_fields}')
 
-        # TODO double check if values in bounds of Germany
-        # North: 55.0583° N, 8.4165° E  (> 55.1)
-        # South: 47.2701° N, 10.1783° E (< 47.2)
-        # East: 51.2729° N, 15.0419° E  (> 15.1)
-        # West: 51.0511° N, 5.8663° E   (< 5.8)
 
-        if len(response) > 0:
-            # return f'{float(response[0].get('lat'))} {float(response[0].get('lon'))}'
-            api_coords = [float(response[0].get('lat')), float(response[0].get('lon'))]
+def parse_nominatim_coords(results: list) -> list | None:
+    # TODO double check if values in bounds of Germany
+    # North: 55.0583° N, 8.4165° E  (> 55.1)
+    # South: 47.2701° N, 10.1783° E (< 47.2)
+    # East: 51.2729° N, 15.0419° E  (> 15.1)
+    # West: 51.0511° N, 5.8663° E   (< 5.8)
+    if not results:
+        return None
+    try:
+        coords = [float(results[0].get('lat')), float(results[0].get('lon'))]
+    except (TypeError, ValueError, AttributeError):
+        return None
+    if any(math.isnan(c) for c in coords):
+        return None
+    return coords
 
-            if api_coords != api_coords:
-                print(f'NaN {zip} {city}')
-                return None
-            if api_coords:
-                if valid_area_code(area_code):
-                    update_coords_collection(zip, city, area_code, api_coords)
-                return api_coords
-            print(f'None {zip} {city}')
 
-    return None
+def get_coords(zip: str | None, city: str | None, area_code: str | None) -> list | None:
+    # TODO double checked?
+    if not zip:
+        return None
+    cached = db['geodata'].find_one(place_query(zip, city), {'coordinates': 1})
+    if cached:
+        return cached.get('coordinates')
+    coords = parse_nominatim_coords(request_nominatim(zip, city or ''))
+    if coords is None:
+        print(f'None {zip} {city}')
+        return None
+    save_coords(zip, city, area_code, coords)
+    return coords
 
 
 def wait_for_nominatim_slot() -> None:
@@ -191,17 +199,17 @@ def request_nominatim(zip: str, city: str) -> list:
     return results
 
 
-def get_coords_by_area_code(area_code):
+def get_coords_by_area_code(area_code: str) -> list | None:
     coords = db['geodata'].find_one({'area_code': area_code}, {'coordinates': 1})
     if coords:
         return coords.get('coordinates')
     return None
 
 
-def valid_area_code(area_code):
+def valid_area_code(area_code: str | None) -> bool:
     ignore = ['0310', '0311', '032', '0700', '0701', '0800', '0801', '0900', '09001', '09002', '09003', '09004',
               '09005']
-    if area_code is None:
+    if not area_code:
         return False
     elif area_code in ignore:
         return False

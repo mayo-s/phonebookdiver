@@ -126,7 +126,7 @@ def test_get_coords_returns_none_instead_of_crashing_when_nominatim_fails(
     coords = hm_requester.get_coords('19260', 'Marsow', None)
 
     assert coords is None
-    geodata.insert_one.assert_not_called()
+    geodata.update_one.assert_not_called()
 
 
 def test_first_nominatim_request_does_not_wait(clock: FakeClock, nominatim: MagicMock) -> None:
@@ -399,3 +399,121 @@ def test_hm_query_does_no_single_lookups_when_everything_is_cached(geodata: Magi
     geodata.find.assert_called_once()  # the geodata cache
     geodata.find_one.assert_not_called()
     nominatim.assert_not_called()
+
+
+def saved_place(geodata: MagicMock) -> tuple:
+    """(filter, fields set on insert) of the single update_one call."""
+    geodata.update_one.assert_called_once()
+    place, update = geodata.update_one.call_args.args
+    assert geodata.update_one.call_args.kwargs['upsert'] is True
+    return place, update['$setOnInsert']
+
+
+def test_save_coords_stores_valid_area_code(geodata: MagicMock) -> None:
+    hm_requester.save_coords('19260', 'Marsow', '038852', MARSOW)
+
+    assert saved_place(geodata) == ({'zip': '19260', 'city': 'Marsow'}, {'coordinates': MARSOW, 'area_code': '038852'})
+
+
+@pytest.mark.parametrize('area_code', ['0171', '0800', '', None])
+def test_save_coords_leaves_out_unusable_area_code(geodata: MagicMock, area_code: str | None) -> None:
+    hm_requester.save_coords('19260', 'Marsow', area_code, MARSOW)
+
+    assert saved_place(geodata) == ({'zip': '19260', 'city': 'Marsow'}, {'coordinates': MARSOW})
+
+
+def test_save_coords_without_city_saves_by_zip(geodata: MagicMock) -> None:
+    hm_requester.save_coords('19260', '', '038852', MARSOW)
+
+    place, _ = saved_place(geodata)
+    assert place == {'zip': '19260'}
+
+
+def test_save_coords_keeps_api_running_when_mongodb_fails(geodata: MagicMock) -> None:
+    geodata.update_one.side_effect = pymongo.errors.AutoReconnect('connection lost')
+
+    hm_requester.save_coords('19260', 'Marsow', '038852', MARSOW)
+
+    geodata.update_one.assert_called_once()
+
+
+@pytest.mark.parametrize('area_code', ['038852', '0171', ''])
+def test_get_coords_saves_every_nominatim_result(geodata: MagicMock, nominatim: MagicMock, area_code: str) -> None:
+    geodata.find_one.return_value = None
+    nominatim.return_value.json.return_value = [{'lat': '53.4242109', 'lon': '10.9311292'}]
+
+    hm_requester.get_coords('19260', 'Marsow', area_code)
+
+    place, fields = saved_place(geodata)
+    assert place == {'zip': '19260', 'city': 'Marsow'}
+    assert fields['coordinates'] == MARSOW
+
+
+def test_get_coords_does_not_save_cached_place(geodata: MagicMock, nominatim: MagicMock) -> None:
+    geodata.find_one.return_value = {'coordinates': MARSOW}
+
+    hm_requester.get_coords('19260', 'Marsow', '038852')
+
+    geodata.update_one.assert_not_called()
+
+
+def test_get_coords_does_not_save_when_nominatim_finds_nothing(geodata: MagicMock, nominatim: MagicMock) -> None:
+    geodata.find_one.return_value = None
+
+    coords = hm_requester.get_coords('91541', 'Rothenburg o d Tauber', '09861')
+
+    assert coords is None
+    geodata.update_one.assert_not_called()
+
+
+def test_get_coords_returns_coordinates_even_if_saving_fails(geodata: MagicMock, nominatim: MagicMock) -> None:
+    geodata.find_one.return_value = None
+    geodata.update_one.side_effect = pymongo.errors.AutoReconnect('connection lost')
+    nominatim.return_value.json.return_value = [{'lat': '53.4242109', 'lon': '10.9311292'}]
+
+    coords = hm_requester.get_coords('19260', 'Marsow', '038852')
+
+    assert coords == MARSOW
+
+
+@pytest.mark.parametrize('zip', [None, ''])
+def test_get_coords_without_zip_does_no_lookup(geodata: MagicMock, nominatim: MagicMock, zip: str | None) -> None:
+    coords = hm_requester.get_coords(zip, 'Marsow', '038852')
+
+    assert coords is None
+    geodata.find_one.assert_not_called()
+    nominatim.assert_not_called()
+
+
+def test_parse_nominatim_coords_reads_first_result() -> None:
+    results = [{'lat': '53.4242109', 'lon': '10.9311292'}, {'lat': '1.0', 'lon': '2.0'}]
+
+    coords = hm_requester.parse_nominatim_coords(results)
+
+    assert coords == MARSOW
+
+
+@pytest.mark.parametrize('results', [
+    [],
+    [{}],
+    [{'lat': '53.42'}],
+    [{'lat': 'abc', 'lon': '10.93'}],
+    [{'lat': 'nan', 'lon': '10.93'}],
+    [None],
+])
+def test_parse_nominatim_coords_rejects_unusable_results(results: list) -> None:
+    coords = hm_requester.parse_nominatim_coords(results)
+
+    assert coords is None
+
+
+@pytest.mark.parametrize('area_code, expected', [
+    ('038852', True),
+    ('030', True),
+    ('0171', False),
+    ('0800', False),
+    ('', False),
+    (None, False),
+])
+def test_valid_area_code(area_code: str | None, expected: bool) -> None:
+    assert hm_requester.valid_area_code(area_code) is expected
