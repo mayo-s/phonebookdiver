@@ -30,6 +30,17 @@ Python dependencies for api/, tools/ and jupyter/ are managed with [pipenv](http
 - run a single command in the environment, e.g. `> cd tools && pipenv run python main.py`
 - or open a shell within the environment `> pipenv shell` (leave it with `> exit`)
 
+## MongoDB
+
+The API and tools expect MongoDB 4.4 on `127.0.0.1:27017`, database `phonebookdiver`.
+
+- start it in the background (data dir e.g. `/Volumes/SSD250/mongodb/data/db`)
+  `> mongod --dbpath <data dir> --bind_ip 127.0.0.1 --port 27017 --fork --logpath <data dir>/../mongod.log`
+- check it is running `> pgrep -lf mongod`
+- stop it cleanly before unplugging the drive `> mongo admin --quiet --eval 'db.shutdownServer()'`
+  (the following "Failed to end logical session ... Connection refused" is expected, the server is already gone)
+- confirm it is stopped: `> pgrep -lf mongod` prints nothing and `<data dir>/mongod.lock` is empty (0 bytes)
+
 ## React-App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
