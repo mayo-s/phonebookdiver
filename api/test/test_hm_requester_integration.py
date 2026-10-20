@@ -1,5 +1,4 @@
 import time
-from typing import Iterator
 from unittest.mock import MagicMock
 
 import pytest
@@ -11,51 +10,6 @@ import requests
 
 # every test in this file talks to real services: Nominatim or the local MongoDB
 pytestmark = pytest.mark.integration
-
-TEST_DB = 'phonebookdiver_test'
-
-
-class CommandLog(pymongo.monitoring.CommandListener):
-    """Records every command the client sends, to count real round trips to MongoDB."""
-
-    def __init__(self) -> None:
-        self.commands = []
-
-    def started(self, event: pymongo.monitoring.CommandStartedEvent) -> None:
-        self.commands.append((event.command_name, event.command.get(event.command_name)))
-
-    def succeeded(self, event: pymongo.monitoring.CommandSucceededEvent) -> None:
-        pass
-
-    def failed(self, event: pymongo.monitoring.CommandFailedEvent) -> None:
-        pass
-
-    def count(self, command: str, collection: str) -> int:
-        return sum(1 for name, target in self.commands if name == command and target == collection)
-
-    def finds_on(self, collection: str) -> int:
-        return self.count('find', collection)
-
-
-@pytest.fixture
-def command_log() -> CommandLog:
-    return CommandLog()
-
-
-@pytest.fixture
-def mongo_test_db(monkeypatch: pytest.MonkeyPatch, command_log: CommandLog) -> Iterator[pymongo.database.Database]:
-    """Point hm_requester at a throwaway database on the local MongoDB, dropped afterwards."""
-    client = pymongo.MongoClient(helper.MONGO_URI, serverSelectionTimeoutMS=2000, event_listeners=[command_log])
-    try:
-        client.admin.command('ping')
-    except pymongo.errors.PyMongoError:
-        pytest.skip(f'MongoDB not reachable at {helper.MONGO_URI}')
-    client.drop_database(TEST_DB)
-    db = client[TEST_DB]
-    monkeypatch.setattr(hm_requester, 'db', db)
-    yield db
-    client.drop_database(TEST_DB)
-    client.close()
 
 
 @pytest.fixture

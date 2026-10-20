@@ -250,20 +250,23 @@ def wait_for_nominatim_slot() -> None:
 
 
 def request_nominatim(zip: str, city: str) -> list | None:
+    return nominatim_search({'countrycode': 'de', 'q': f'{zip} {city} Deutschland', 'format': 'jsonv2'})
+
+
+def nominatim_search(params: dict) -> list | None:
     """Returns None on failure and [] if Nominatim knows no such place; only the latter is worth remembering."""
     wait_for_nominatim_slot()
-    query_str = f'{NOMINATIM_URL}?countrycode=de&q={zip}%20{city}%20Deutschland&format=jsonv2'
     try:
-        response = requests.get(query_str, headers=NOMINATIM_HEADERS, timeout=NOMINATIM_TIMEOUT)
+        response = requests.get(NOMINATIM_URL, params=params, headers=NOMINATIM_HEADERS, timeout=NOMINATIM_TIMEOUT)
         response.raise_for_status()
         results = response.json()
     except requests.RequestException as err:
-        msg = f'Nominatim request failed for {zip} {city}: {err}'
+        msg = f'Nominatim request failed for {params}: {err}'
         helper.log('WARNING', msg)
         print(msg)
         return None
     if not isinstance(results, list):
-        msg = f'Unexpected Nominatim response for {zip} {city}: {results}'
+        msg = f'Unexpected Nominatim response for {params}: {results}'
         helper.log('WARNING', msg)
         print(msg)
         return None

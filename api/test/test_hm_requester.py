@@ -737,3 +737,10 @@ def test_get_coords_saves_plausible_result(geodata: MagicMock, not_found: MagicM
     assert coords == MARSOW
     geodata.update_one.assert_called_once()
     not_found.update_one.assert_not_called()
+
+
+def test_request_nominatim_searches_zip_and_city_in_germany(nominatim: MagicMock) -> None:
+    hm_requester.request_nominatim('19260', 'Marsow')
+
+    assert nominatim.call_args.args == (hm_requester.NOMINATIM_URL,)
+    assert nominatim.call_args.kwargs['params'] == {'countrycode': 'de', 'q': '19260 Marsow Deutschland', 'format': 'jsonv2'}

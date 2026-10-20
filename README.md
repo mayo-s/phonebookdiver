@@ -27,7 +27,6 @@ Python dependencies for api/, tools/ and jupyter/ are managed with [pipenv](http
 - move to your project directory `> cd "path/projectName"`
 - install dependencies for api/ and tools/ `> pipenv install --dev`
 - additionally install the jupyter/ dependencies `> pipenv install --categories="packages notebook"`
-
 - run a single command in the environment, e.g. `> cd tools && pipenv run python main.py`
 - or open a shell within the environment `> pipenv shell` (leave it with `> exit`)
 
@@ -71,3 +70,21 @@ New Nominatim results are checked for plausibility before they are saved. A resu
 
 Rejected results and places Nominatim doesn't know are kept in `geodata_not_found` with a `reason` (and the rejected
 coordinates), so they aren't requested again.
+
+### Cleaning up existing geodata (`api/scripts/geodata_cleanup.py`)
+
+The plausibility check only applies to new results. To find and fix wrongly geocoded entries already in `geodata`, run
+the cleanup script from within `api/` (`> cd api`). It works in two steps:
+
+1. **plan** – reads `geodata`, asks Nominatim for the centre of every suspicious zip code and writes a CSV plan. Nothing
+   in the database is changed. Takes a while (one Nominatim request per second).
+   `> pipenv run python -m scripts.geodata_cleanup plan --report geodata_cleanup_plan.csv`
+2. **apply** – executes exactly the reviewed CSV, without new Nominatim requests.
+   `> pipenv run python -m scripts.geodata_cleanup apply geodata_cleanup_plan.csv`
+
+An entry counts as wrong if it lies more than 35 km from its zip code's centre. It is re-geocoded with zip code + city;
+if the new result is close to the centre, the entry is updated, otherwise it is moved to `geodata_not_found` (with its
+old coordinates).
+
+Back up first, e.g. `> mongodump --db phonebookdiver --collection geodata --out <backup dir>`, and restore if needed
+with `> mongorestore --drop --nsInclude 'phonebookdiver.geodata*' <backup dir>`.
