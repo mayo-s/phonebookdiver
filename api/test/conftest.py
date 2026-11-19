@@ -6,6 +6,7 @@ import pytest
 import helper
 import hm_requester
 import pymongo
+import requester
 
 
 @pytest.fixture
@@ -17,6 +18,7 @@ def fake_db(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     db[hm_requester.NOT_FOUND].find_one.return_value = None
     db[hm_requester.NOT_FOUND].find.return_value = []
     monkeypatch.setattr(hm_requester, 'db', db)
+    monkeypatch.setattr(requester, 'db', db)
     return db
 
 
@@ -67,7 +69,7 @@ def command_log() -> CommandLog:
 
 @pytest.fixture
 def mongo_test_db(monkeypatch: pytest.MonkeyPatch, command_log: CommandLog) -> Iterator[pymongo.database.Database]:
-    """Point hm_requester at a throwaway database on the local MongoDB, dropped afterwards."""
+    """Point hm_requester and requester at a throwaway database on the local MongoDB, dropped afterwards."""
     client = pymongo.MongoClient(helper.MONGO_URI, serverSelectionTimeoutMS=2000, event_listeners=[command_log])
     try:
         client.admin.command('ping')
@@ -76,6 +78,7 @@ def mongo_test_db(monkeypatch: pytest.MonkeyPatch, command_log: CommandLog) -> I
     client.drop_database(TEST_DB)
     db = client[TEST_DB]
     monkeypatch.setattr(hm_requester, 'db', db)
+    monkeypatch.setattr(requester, 'db', db)
     yield db
     client.drop_database(TEST_DB)
     client.close()

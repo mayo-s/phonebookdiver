@@ -39,11 +39,11 @@ def search_colls(range, query_values):
   # TODO refactor - minimze loops
   for c in c_range:
 
-    response = db[c].find(query_values)
-    if response.count() <= 0: continue
-    # print(f'Found {response.count()} results in {c}')
-    total_count += response.count()
-    for resp in response:
+    count = db[c].count_documents(query_values)
+    if count <= 0: continue
+    # print(f'Found {count} results in {c}')
+    total_count += count
+    for resp in db[c].find(query_values):
       found = False
       resp_id = c + str(resp.get('_id'))
       resp_hash = build_address_hash(collections.OrderedDict(sorted(resp.items())))
